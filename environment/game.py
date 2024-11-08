@@ -112,7 +112,7 @@ class Game:
 
             for agent in self.agents:
                 if self.frame % 20 == 0:
-                    agent.direction = random.random() * math.pi * 2 - math.pi
+                    # agent.direction = random.random() * math.pi * 2 - math.pi
                     if (
                         random.random() < 0.05
                         if agent.accelerating
