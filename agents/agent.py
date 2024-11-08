@@ -1,6 +1,7 @@
 import pygame
 import math
 
+
 class Agent:
     def __init__(self, x, y, radius=20, color=(255, 0, 0), direction=0):  # Red
         self.x = x
@@ -22,6 +23,8 @@ class Agent:
         pygame.draw.line(screen, (255, 255, 255), (self.x, self.y), (end_x, end_y), 2)
 
     def update(self, agents, puck):
+        new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
+        self.direction = new_dir
         if self.accelerating:
             self.speed_x += math.cos(self.direction)
             self.speed_y += math.sin(self.direction)
@@ -34,14 +37,7 @@ class Agent:
             elif speed > 0:
                 self.speed_x *= 0.99  # Friction factor
                 self.speed_y *= 0.99
-                
 
-        # Limit speed
-        speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
-        if speed > self.max_speed:
-            self.speed_x = self.speed_x / speed * self.max_speed
-            self.speed_y = self.speed_y / speed * self.max_speed
-        
         # Agent-agent collision detection
         for other_agent in agents:
             if other_agent == self:
@@ -71,20 +67,20 @@ class Agent:
                 self.speed_y = v1n * normal_y + v2t
                 other_agent.speed_x = v2n * normal_x + v2t
                 other_agent.speed_y = v2n * normal_y
-        
+
         # Agent-puck collision detection
         dx = puck.x - self.x
         dy = puck.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
-        if distance < self.radius + self.radius:  # Collision detected
+        if distance < puck.radius + self.radius:  # Collision detected
             # Calculate collision normal
             normal_x = dx / distance
             normal_y = dy / distance
 
             # Resolve overlap
             overlap = puck.radius + self.radius - distance
-            puck.x -= normal_x * overlap / 2
-            puck.y -= normal_y * overlap / 2
+            puck.x += normal_x * overlap / 2
+            puck.y += normal_y * overlap / 2
 
             # Update velocities (elastic collision)
             v1n = puck.speed_x * normal_x + puck.speed_y * normal_y
@@ -96,6 +92,12 @@ class Agent:
             puck.speed_y = v1n * normal_y + v2t
             self.speed_x = v2n * normal_x + v2t
             self.speed_y = v2n * normal_y
+
+        # Limit speed
+        speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
+        if speed > self.max_speed:
+            self.speed_x = self.speed_x / speed * self.max_speed
+            self.speed_y = self.speed_y / speed * self.max_speed
 
         self.x += self.speed_x
         self.y += self.speed_y
