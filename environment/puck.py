@@ -13,8 +13,11 @@ class Puck:
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
 
-    def update(self):
-        self.speed_x *= 0.999
+    def update(self, agents):
+        if (speed := (self.speed_x**2 + self.speed_y**2) ** 0.5) >= 5:
+            self.speed_x = self.speed_x / speed * 5
+            self.speed_y = self.speed_y / speed * 5
+        self.speed_x *= 0.998
         self.speed_y *= 0.999
         self.x += self.speed_x
         self.y += self.speed_y
