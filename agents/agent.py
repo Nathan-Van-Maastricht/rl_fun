@@ -4,7 +4,7 @@ import random
 
 
 class Agent:
-    def __init__(self, x, y, config, color=(255, 0, 0), direction=0):
+    def __init__(self, x, y, config, team, color=(255, 0, 0), direction=0):
         self.x = x
         self.y = y
         self.config = config
@@ -15,6 +15,8 @@ class Agent:
         self.direction = direction  # Radians, 0 = right, pi/2 = up
         self.accelerating = False
         self.max_speed = config["agent"]["max_speed"]
+        self.team = team
+        self.id = hash(self.color)
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
@@ -24,11 +26,17 @@ class Agent:
         end_y = self.y + math.sin(self.direction) * self.radius
         pygame.draw.line(screen, (255, 255, 255), (self.x, self.y), (end_x, end_y), 2)
 
-    def actions(self, observation, puck):
+    def actions(self, puck):
         new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
         self.direction = new_dir
-        if random.random() < 0.01:
+        if random.random() < 0.001:
             self.accelerating = not self.accelerating
+
+    def action(self, accelerating, direction):
+        # direction must be between -0.4r and 0.4r
+        # accelerating is either 0 or 1
+        self.direction = (self.direction + direction) % math.pi
+        self.accelerating = accelerating
 
     def update(self, agents, puck):
         if self.accelerating:
