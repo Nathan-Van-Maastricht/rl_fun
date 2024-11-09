@@ -96,39 +96,48 @@ class Game:
         self.screen.blit(team1_score, (760, 10))
         self.screen.blit(frame, (385, 10))
 
+    def update(self):
+        for agent in self.agents:
+            if self.frame % 20 == 0:
+                # agent.direction = random.random() * math.pi * 2 - math.pi
+                if (
+                    random.random() < 0.05
+                    if agent.accelerating
+                    else random.random() < 0.1
+                ):
+                    agent.accelerating = not agent.accelerating
+            agent.update(self.agents, self.puck)
+
+        self.puck.update()
+
+        goal_state = self.field.detect_goal(self.puck)
+        if goal_state:
+            self.reset(goal_state)
+
+    def draw(self):
+        self.field.draw_field(self.screen)
+        self.draw_score()
+
+        for agent in self.agents:
+            agent.draw(self.screen)
+
+        self.puck.draw(self.screen)
+
     def run(self):
         running = True
+
+        # initialise all agents to accelerating
         for agent in self.agents:
             agent.accelerating = True
 
-        while running and self.frame < 25000:
+        while running and (self.frame < 28800 or self.score[0] == self.score[1]):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
+            self.update()
             if self.visualise:
-                self.field.draw_field(self.screen)
-                self.draw_score()
-
-            for agent in self.agents:
-                if self.frame % 20 == 0:
-                    # agent.direction = random.random() * math.pi * 2 - math.pi
-                    if (
-                        random.random() < 0.05
-                        if agent.accelerating
-                        else random.random() < 0.1
-                    ):
-                        agent.accelerating = not agent.accelerating
-                agent.update(self.agents, self.puck)
-                if self.visualise:
-                    agent.draw(self.screen)
-            self.puck.update()
-            if self.visualise:
-                self.puck.draw(self.screen)
-            goal_state = self.field.detect_goal(self.puck)
-
-            if goal_state:
-                self.reset(goal_state)
+                self.draw()
 
             pygame.display.flip()
             self.clock.tick(240)
