@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 
 
 class Agent:
@@ -23,9 +24,13 @@ class Agent:
         end_y = self.y + math.sin(self.direction) * self.radius
         pygame.draw.line(screen, (255, 255, 255), (self.x, self.y), (end_x, end_y), 2)
 
-    def update(self, agents, puck):
+    def actions(self, observation, puck):
         new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
         self.direction = new_dir
+        if random.random() < 0.01:
+            self.accelerating = not self.accelerating
+
+    def update(self, agents, puck):
         if self.accelerating:
             self.speed_x += math.cos(self.direction)
             self.speed_y += math.sin(self.direction)

@@ -35,24 +35,24 @@ class Game:
         # Team 1
         self.agents.append(
             Agent(
-                200 + random.random() - 0.5,
-                150 + random.random() - 0.5,
+                200 + (random.random() - 0.5) * 10,
+                150 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(255, 50, 50),
             )
         )
         self.agents.append(
             Agent(
-                200 + random.random() - 0.5,
-                300 + random.random() - 0.5,
+                200 + (random.random() - 0.5) * 10,
+                300 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(255, 50, 100),
             )
         )
         self.agents.append(
             Agent(
-                200 + random.random() - 0.5,
-                450 + random.random() - 0.5,
+                200 + (random.random() - 0.5) * 10,
+                450 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(255, 100, 50),
             )
@@ -61,8 +61,8 @@ class Game:
         # Team 2
         self.agents.append(
             Agent(
-                600 + random.random() - 0.5,
-                150 + random.random() - 0.5,
+                600 + (random.random() - 0.5) * 10,
+                150 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(50, 50, 255),
                 direction=math.pi,
@@ -70,8 +70,8 @@ class Game:
         )
         self.agents.append(
             Agent(
-                600 + random.random() - 0.5,
-                300 + random.random() - 0.5,
+                600 + (random.random() - 0.5) * 10,
+                300 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(100, 50, 255),
                 direction=math.pi,
@@ -79,8 +79,8 @@ class Game:
         )
         self.agents.append(
             Agent(
-                600 + random.random() - 0.5,
-                450 + random.random() - 0.5,
+                600 + (random.random() - 0.5) * 10,
+                450 + (random.random() - 0.5) * 10,
                 self.config,
                 color=(50, 100, 255),
                 direction=math.pi,
@@ -102,24 +102,23 @@ class Game:
             self.config,
         )
 
+        for agent in self.agents:
+            agent.accelerating = True
+
     def draw_score(self):
         team0_score = self.score_font.render(str(self.score[0]), True, (255, 0, 0))
         team1_score = self.score_font.render(str(self.score[1]), True, (0, 0, 255))
         frame = self.frame_font.render(str(self.frame), True, (0, 0, 0))
-        self.screen.blit(team0_score, (10, 10))
-        self.screen.blit(team1_score, (760, 10))
-        self.screen.blit(frame, (385, 10))
+        self.screen.blit(team0_score, (0, 10))
+        self.screen.blit(
+            team1_score,
+            (self.config["field"]["width"] - self.config["field"]["goal_width"], 10),
+        )
+        self.screen.blit(frame, (self.config["field"]["width"] // 2 - 20, 10))
 
     def update(self):
         for agent in self.agents:
-            if self.frame % 20 == 0:
-                # agent.direction = random.random() * math.pi * 2 - math.pi
-                if (
-                    random.random() < 0.05
-                    if agent.accelerating
-                    else random.random() < 0.1
-                ):
-                    agent.accelerating = not agent.accelerating
+            agent.actions(None, self.puck)
             agent.update(self.agents, self.puck)
 
         self.puck.update()
@@ -139,10 +138,6 @@ class Game:
 
     def run(self):
         running = True
-
-        # initialise all agents to accelerating
-        for agent in self.agents:
-            agent.accelerating = True
 
         while running and (
             self.frame < self.config["total_frames"]
