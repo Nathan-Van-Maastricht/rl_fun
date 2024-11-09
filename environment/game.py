@@ -112,7 +112,7 @@ class Game:
         self.screen.blit(team0_score, (0, 10))
         self.screen.blit(
             team1_score,
-            (self.config["field"]["width"] - self.config["field"]["goal_width"], 10),
+            (self.config["field"]["width"] - 40, 10),
         )
         self.screen.blit(frame, (self.config["field"]["width"] // 2 - 20, 10))
 

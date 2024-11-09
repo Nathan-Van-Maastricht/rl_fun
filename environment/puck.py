@@ -29,9 +29,9 @@ class Puck:
 
         # Boundary check (keep puck within field)
         field_x, field_y, field_width, field_height = (
-            self.config["field"]["goal_width"],
             0,
-            self.config["field"]["width"] - 2 * self.config["field"]["goal_width"],
+            0,
+            self.config["field"]["width"],
             self.config["field"]["height"],
         )
         if self.x - self.radius < field_x:
@@ -49,21 +49,19 @@ class Puck:
             self.speed_y *= -1
 
     def detect_goal(self):
-        if (
-            self.y
-            < self.config["field"]["height"] // 2
-            + self.config["field"]["goal_height"] // 2
-            and self.y
-            > self.config["field"]["height"] // 2
-            - self.config["field"]["goal_height"] // 2
-        ):
-            if self.x - self.radius < self.config["field"]["goal_width"] + 1e-3:
-                return 1
-            if (
-                self.x + self.radius
-                > self.config["field"]["width"]
-                - self.config["field"]["goal_width"]
-                - 1e-3
-            ):
-                return -1
+        distance_to_goal_0 = (
+            (self.y - self.config["field"]["height"] // 2) ** 2 + self.x**2
+        ) ** 0.5
+
+        if distance_to_goal_0 < self.config["field"]["goal_radius"]:
+            return 1
+
+        distance_to_goal_1 = (
+            (self.y - self.config["field"]["height"] // 2) ** 2
+            + (self.x - self.config["field"]["width"]) ** 2
+        ) ** 0.5
+
+        if distance_to_goal_1 < self.config["field"]["goal_radius"]:
+            return -1
+
         return 0

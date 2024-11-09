@@ -110,9 +110,9 @@ class Agent:
 
         # Boundary check (keep agent within field)
         field_x, field_y, field_width, field_height = (
-            self.config["field"]["goal_width"],
             0,
-            self.config["field"]["width"] - 2 * self.config["field"]["goal_width"],
+            0,
+            self.config["field"]["width"],
             self.config["field"]["height"],
         )
         if self.x - self.radius < field_x:

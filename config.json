@@ -1,21 +1,25 @@
 {
     "total_frames": 28800,
     "visualise": true,
-    "max_fps": 240,
+    "max_fps": 120,
     "tiebreak": true,
     "friction": 0.99,
     "field": {
-        "width": 800,
-        "height": 600,
-        "goal_width": 40,
-        "goal_height": 120,
+        "width": 1000,
+        "height": 800,
+        "goal_radius": 80,
         "color": [
             0,
             150,
             0
         ],
-        "goal_color": [
+        "goal_color0": [
             255,
+            0,
+            0
+        ],
+        "goal_color1": [
+            0,
             0,
             255
         ]
