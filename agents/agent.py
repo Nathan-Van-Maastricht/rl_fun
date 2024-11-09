@@ -3,16 +3,17 @@ import math
 
 
 class Agent:
-    def __init__(self, x, y, radius=20, color=(255, 0, 0), direction=0):  # Red
+    def __init__(self, x, y, config, color=(255, 0, 0), direction=0):
         self.x = x
         self.y = y
-        self.radius = radius
+        self.config = config
+        self.radius = config["agent"]["radius"]
         self.color = color
         self.speed_x = 0
         self.speed_y = 0
         self.direction = direction  # Radians, 0 = right, pi/2 = up
         self.accelerating = False
-        self.max_speed = 3
+        self.max_speed = config["agent"]["max_speed"]
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
@@ -35,8 +36,8 @@ class Agent:
                 self.speed_x = 0
                 self.speed_y = 0
             elif speed > 0:
-                self.speed_x *= 0.99  # Friction factor
-                self.speed_y *= 0.99
+                self.speed_x *= self.config["friction"]  # Friction factor
+                self.speed_y *= self.config["friction"]
 
         # Agent-agent collision detection
         for other_agent in agents:
@@ -103,17 +104,22 @@ class Agent:
         self.y += self.speed_y
 
         # Boundary check (keep agent within field)
-        field_x, field_y, field_width, field_height = 40, 0, 720, 600
+        field_x, field_y, field_width, field_height = (
+            self.config["field"]["goal_width"],
+            0,
+            self.config["field"]["width"] - 2 * self.config["field"]["goal_width"],
+            self.config["field"]["height"],
+        )
         if self.x - self.radius < field_x:
             self.x = field_x + self.radius
-            self.speed_x *= -0.98
+            self.speed_x *= -self.config["agent"]["reflect_energy_loss"]
         elif self.x + self.radius > field_x + field_width:
             self.x = field_x + field_width - self.radius
-            self.speed_x *= -0.98
+            self.speed_x *= -self.config["agent"]["reflect_energy_loss"]
 
         if self.y - self.radius < field_y:
             self.y = field_y + self.radius
-            self.speed_y *= -1
+            self.speed_y *= -self.config["agent"]["reflect_energy_loss"]
         elif self.y + self.radius > field_y + field_height:
             self.y = field_y + field_height - self.radius
-            self.speed_y *= -1
+            self.speed_y *= -self.config["agent"]["reflect_energy_loss"]

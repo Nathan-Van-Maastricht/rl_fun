@@ -2,23 +2,25 @@ import pygame
 
 
 class Puck:
-    def __init__(self, x, y, radius=10, color=(0, 0, 0)):  # White
+    def __init__(self, x, y, config, radius=10, color=(0, 0, 0)):
         self.x = x
         self.y = y
+        self.config = config
         self.radius = radius
         self.color = color
         self.speed_x = 0
         self.speed_y = 0
+        self.max_speed = self.config["puck"]["max_speed"]
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
 
     def update(self):
-        if (speed := (self.speed_x**2 + self.speed_y**2) ** 0.5) >= 5:
-            self.speed_x = self.speed_x / speed * 5
-            self.speed_y = self.speed_y / speed * 5
-        self.speed_x *= 0.998
-        self.speed_y *= 0.999
+        if (speed := (self.speed_x**2 + self.speed_y**2) ** 0.5) >= self.max_speed:
+            self.speed_x = self.speed_x / speed * self.max_speed
+            self.speed_y = self.speed_y / speed * self.max_speed
+        self.speed_x *= self.config["friction"]
+        self.speed_y *= self.config["friction"]
         self.x += self.speed_x
         self.y += self.speed_y
 
@@ -26,7 +28,12 @@ class Puck:
             return
 
         # Boundary check (keep puck within field)
-        field_x, field_y, field_width, field_height = 40, 0, 720, 600
+        field_x, field_y, field_width, field_height = (
+            self.config["field"]["goal_width"],
+            0,
+            self.config["field"]["width"] - 2 * self.config["field"]["goal_width"],
+            self.config["field"]["height"],
+        )
         if self.x - self.radius < field_x:
             self.x = field_x + self.radius
             self.speed_x *= -1
@@ -42,9 +49,21 @@ class Puck:
             self.speed_y *= -1
 
     def detect_goal(self):
-        if self.y < 600 // 2 + 20 and self.y > 600 // 2 - 20:
-            if self.x - self.radius < 40 + 1e-3:
+        if (
+            self.y
+            < self.config["field"]["height"] // 2
+            + self.config["field"]["goal_height"] // 2
+            and self.y
+            > self.config["field"]["height"] // 2
+            - self.config["field"]["goal_height"] // 2
+        ):
+            if self.x - self.radius < self.config["field"]["goal_width"] + 1e-3:
                 return 1
-            if self.x + self.radius > 760 - 1e-3:
+            if (
+                self.x + self.radius
+                > self.config["field"]["width"]
+                - self.config["field"]["goal_width"]
+                - 1e-3
+            ):
                 return -1
         return 0

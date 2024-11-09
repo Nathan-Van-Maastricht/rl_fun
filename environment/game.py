@@ -6,33 +6,38 @@ import pygame
 from agents.agent import Agent
 from environment.field import Field
 from environment.puck import Puck
+from utils.config import Config
 
 
 class Game:
-    def __init__(self, width=800, height=600, goal_width=40, visualise=True):
-        self.field = Field(width, height, goal_width)
-        self.agents = []
-        self.puck = Puck(400, 300)
-        self.create_agents()
+    def __init__(self, config: Config):
+        self.config = config
+        self.field = Field(self.config)
+
+        self.reset_positions()
         self.score = [0, 0]
         self.frame = 0
-        self.visualise = visualise
-        if visualise:
+
+        self.visualise = config["visualise"]
+        if self.visualise:
             pygame.init()
-            self.width = width
-            self.height = height
-            self.screen = pygame.display.set_mode((width, height))
+            self.screen = pygame.display.set_mode(
+                (config["field"]["width"], config["field"]["height"])
+            )
             pygame.display.set_caption("Hockey Field")
             self.clock = pygame.time.Clock()
             self.score_font = pygame.font.SysFont("Arial", 64)
             self.frame_font = pygame.font.SysFont("Arial", 16)
 
     def create_agents(self):
+        self.agents = []
+
         # Team 1
         self.agents.append(
             Agent(
                 200 + random.random() - 0.5,
                 150 + random.random() - 0.5,
+                self.config,
                 color=(255, 50, 50),
             )
         )
@@ -40,6 +45,7 @@ class Game:
             Agent(
                 200 + random.random() - 0.5,
                 300 + random.random() - 0.5,
+                self.config,
                 color=(255, 50, 100),
             )
         )
@@ -47,6 +53,7 @@ class Game:
             Agent(
                 200 + random.random() - 0.5,
                 450 + random.random() - 0.5,
+                self.config,
                 color=(255, 100, 50),
             )
         )
@@ -56,6 +63,7 @@ class Game:
             Agent(
                 600 + random.random() - 0.5,
                 150 + random.random() - 0.5,
+                self.config,
                 color=(50, 50, 255),
                 direction=math.pi,
             )
@@ -64,6 +72,7 @@ class Game:
             Agent(
                 600 + random.random() - 0.5,
                 300 + random.random() - 0.5,
+                self.config,
                 color=(100, 50, 255),
                 direction=math.pi,
             )
@@ -72,6 +81,7 @@ class Game:
             Agent(
                 600 + random.random() - 0.5,
                 450 + random.random() - 0.5,
+                self.config,
                 color=(50, 100, 255),
                 direction=math.pi,
             )
@@ -79,14 +89,18 @@ class Game:
 
         random.shuffle(self.agents)
 
-    def reset(self, goal_state):
+    def reset_positions(self, goal_state=0):
         if goal_state == 1:
             self.score[1] += 1
-        else:
+        elif goal_state == -1:
             self.score[0] += 1
-        self.agents.clear()
+        self.agents = []
         self.create_agents()
-        self.puck = Puck(400, 300)
+        self.puck = Puck(
+            self.config["field"]["width"] / 2,
+            self.config["field"]["height"] / 2,
+            self.config,
+        )
 
     def draw_score(self):
         team0_score = self.score_font.render(str(self.score[0]), True, (255, 0, 0))
@@ -110,9 +124,9 @@ class Game:
 
         self.puck.update()
 
-        goal_state = self.field.detect_goal(self.puck)
+        goal_state = self.puck.detect_goal()
         if goal_state:
-            self.reset(goal_state)
+            self.reset_positions(goal_state)
 
     def draw(self):
         self.field.draw_field(self.screen)
@@ -130,7 +144,10 @@ class Game:
         for agent in self.agents:
             agent.accelerating = True
 
-        while running and (self.frame < 28800 or self.score[0] == self.score[1]):
+        while running and (
+            self.frame < self.config["total_frames"]
+            or (self.config["tiebreak"] and self.score[0] == self.score[1])
+        ):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -140,7 +157,7 @@ class Game:
                 self.draw()
 
             pygame.display.flip()
-            self.clock.tick(240)
+            self.clock.tick(self.config["max_fps"])
             pygame.display.set_caption(f"FPS: {int(self.clock.get_fps())}")
 
             self.frame += 1

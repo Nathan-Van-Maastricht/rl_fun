@@ -1,0 +1,37 @@
+{
+    "total_frames": 28800,
+    "visualise": true,
+    "max_fps": 240,
+    "tiebreak": true,
+    "friction": 0.99,
+    "field": {
+        "width": 800,
+        "height": 600,
+        "goal_width": 40,
+        "goal_height": 120,
+        "color": [
+            0,
+            150,
+            0
+        ],
+        "goal_color": [
+            255,
+            0,
+            255
+        ]
+    },
+    "puck": {
+        "radius": 10,
+        "color": [
+            0,
+            0,
+            0
+        ],
+        "max_speed": 5
+    },
+    "agent": {
+        "radius": 20,
+        "max_speed": 3,
+        "reflect_energy_loss": 0.98
+    }
+}
