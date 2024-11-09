@@ -48,18 +48,24 @@ class Puck:
             self.y = field_y + field_height - self.radius
             self.speed_y *= -1
 
+    def distance_to_goal(self, goal_number):
+        if goal_number == 0:
+            return (
+                (self.y - self.config["field"]["height"] // 2) ** 2 + self.x**2
+            ) ** 0.5
+        else:
+            return (
+                (self.y - self.config["field"]["height"] // 2) ** 2
+                + (self.x - self.config["field"]["width"]) ** 2
+            ) ** 0.5
+
     def detect_goal(self):
-        distance_to_goal_0 = (
-            (self.y - self.config["field"]["height"] // 2) ** 2 + self.x**2
-        ) ** 0.5
+        distance_to_goal_0 = self.distance_to_goal(0)
 
         if distance_to_goal_0 < self.config["field"]["goal_radius"]:
             return 1
 
-        distance_to_goal_1 = (
-            (self.y - self.config["field"]["height"] // 2) ** 2
-            + (self.x - self.config["field"]["width"]) ** 2
-        ) ** 0.5
+        distance_to_goal_1 = self.distance_to_goal(1)
 
         if distance_to_goal_1 < self.config["field"]["goal_radius"]:
             return -1
