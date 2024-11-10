@@ -4,7 +4,7 @@ import random
 
 
 class Agent:
-    def __init__(self, x, y, config, team, color=(255, 0, 0), direction=0):
+    def __init__(self, x, y, config, team, id, color=(255, 0, 0), direction=0):
         self.x = x
         self.y = y
         self.config = config
@@ -16,7 +16,7 @@ class Agent:
         self.accelerating = False
         self.max_speed = config["agent"]["max_speed"]
         self.team = team
-        self.id = hash(self.color)
+        self.id = id
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
@@ -35,7 +35,11 @@ class Agent:
     def action(self, accelerating, direction):
         # direction must be between -0.4r and 0.4r
         # accelerating is either 0 or 1
-        self.direction = (self.direction + direction) % math.pi
+        self.direction = self.direction + direction
+        if self.direction < -math.pi:
+            self.direction += 2 * math.pi
+        elif self.direction > math.pi:
+            self.direction -= 2 * math.pi
         self.accelerating = accelerating
 
     def update(self, agents, puck):
@@ -53,7 +57,7 @@ class Agent:
                 self.speed_y *= self.config["friction"]
 
         # Agent-agent collision detection
-        for other_agent in agents:
+        for other_agent in agents.values():
             if other_agent == self:
                 continue
             dx = self.x - other_agent.x
