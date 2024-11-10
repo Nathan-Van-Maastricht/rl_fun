@@ -28,6 +28,7 @@ class BrainTrainer:
         frame = 0
 
         while True:
+            random_picked = set()
             for agent in game.agents.values():
                 # observe
                 state = torch.FloatTensor(game.get_observation(agent.id)).to(
@@ -38,6 +39,7 @@ class BrainTrainer:
                 accelerating_probabilities, direction_probabilities = self.agent(state)
 
                 if random.random() < 0.15:
+                    random_picked.add(agent)
                     direction = torch.randint(
                         direction_probabilities.shape[0], (1,)
                     ).to(self.device)
@@ -55,10 +57,11 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                if agent.team == 0:
-                    agent.action(accelerating.item(), ((direction.item() - 5) / 40))
-                else:
-                    agent.action(True, (random.randint(0, 20) - 10) / 40)
+                agent.action(accelerating.item(), ((direction.item() - 20) / 50))
+                # if agent.team == 0:
+                #     agent.action(accelerating.item(), ((direction.item() - 20) / 50))
+                # else:
+                #     agent.action(True, (random.randint(0, 40) - 20) / 50)
 
             # update state
             goal_state = game.update()
@@ -66,8 +69,9 @@ class BrainTrainer:
 
             # determine rewards
             for agent in game.agents.values():
-                if agent.team == 0:
-                    rewards.append(self.reward(game.puck, goal_state, agent))
+                if agent in random_picked:
+                    continue
+                rewards.append(self.reward(game.puck, goal_state, agent))
 
             frame += 1
             if frame + 1 == self.config["total_frames"]:
@@ -101,10 +105,10 @@ class BrainTrainer:
         self.agent_optimiser.step()
 
     def reward(self, puck, goal_state, agent):
-        distance_to_goal1 = puck.distance_to_goal(1)
+        # distance_to_goal1 = puck.distance_to_goal(1)
         # distance_to_goal0 = puck.distance_to_goal(0)
 
-        distance_to_goal_reward = -10 * distance_to_goal1
+        # distance_to_goal_reward = -10 * distance_to_goal1
 
         distance_to_puck_positive = -5 * (
             ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
@@ -118,8 +122,9 @@ class BrainTrainer:
         #     ]
         # )
 
-        direction_to_puck = 10 * abs(
-            math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
+        direction_to_puck = (
+            -10
+            * (math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction) ** 2
         )
 
         in_goal_penalty = 0
@@ -135,13 +140,11 @@ class BrainTrainer:
             ** 0.5
             < self.config["field"]["goal_radius"]
         ):
-            in_goal_penalty = -1000
+            in_goal_penalty = -10000
 
         return (
-            distance_to_goal_reward
-            + direction_to_puck
-            + distance_to_puck_positive
-            + in_goal_penalty
+            # distance_to_goal_reward
+            +direction_to_puck + distance_to_puck_positive + in_goal_penalty
         )
 
     def calculate_returns(self, rewards):
