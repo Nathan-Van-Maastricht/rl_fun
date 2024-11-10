@@ -57,7 +57,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), ((direction.item() - 20) / 50))
+                agent.action(accelerating.item(), ((direction.item() - 5) / 20))
                 # if agent.team == 0:
                 #     agent.action(accelerating.item(), ((direction.item() - 20) / 50))
                 # else:
