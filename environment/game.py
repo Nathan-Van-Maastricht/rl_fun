@@ -174,6 +174,8 @@ class Game:
         if goal_state:
             self.reset_positions(goal_state)
 
+        self.frame += 1
+
         return goal_state
 
     def draw(self):
@@ -203,8 +205,6 @@ class Game:
             self.update()
             if self.visualise:
                 self.draw()
-
-            self.frame += 1
 
         print(self.score)
         pygame.quit()
