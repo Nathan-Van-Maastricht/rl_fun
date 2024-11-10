@@ -5,8 +5,8 @@
     "tiebreak": true,
     "friction": 0.99,
     "field": {
-        "width": 1000,
-        "height": 800,
+        "width": 800,
+        "height": 600,
         "goal_radius": 80,
         "color": [
             0,
