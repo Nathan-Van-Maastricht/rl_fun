@@ -1,4 +1,3 @@
-import math
 import random
 
 import torch
@@ -69,6 +68,7 @@ class BrainTrainer:
                 if agent in agents_not_used:
                     continue
                 rewards.append(self.reward(game.puck, goal_state, agent))
+                agent.reward = rewards[-1]
 
             frame += 1
             if frame + 1 == self.config["total_frames"]:
@@ -106,58 +106,76 @@ class BrainTrainer:
         self.agent_optimiser.step()
 
     def reward(self, puck, goal_state, agent):
-        print(f"{agent.id=}")
-        distance_to_goal0 = puck.distance_to_goal(0)
-        distance_to_goal1 = puck.distance_to_goal(1)
+        if agent.team == 0:
+            target_distance = puck.distance_to_goal(1)
+            own_distance = puck.distance_to_goal(0)
+        else:
+            target_distance = puck.distance_to_goal(0)
+            own_distance = puck.distance_to_goal(1)
         # print(f"{distance_to_goal0=}")
         # print(f"{distance_to_goal1=}")
-        if agent.team == 0:
-            positive_goal = 100000 / (distance_to_goal1 + 100)
-            negative_goal = 100000 / (distance_to_goal0 + 10)
-        if agent.team == 1:
-            positive_goal = 100000 / (distance_to_goal0 + 100)
-            negative_goal = 100000 / (distance_to_goal1 + 10)
-
-        distance_to_goal_reward = 100 * (positive_goal - negative_goal)
-
-        distance_to_puck_positive = 50 * (
-            ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
-        )
-
-        direction_to_puck = -100 * abs(
-            math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
-        )
-
-        in_goal_penalty = 0
+        positive_goal = 0
+        negative_goal = 0
 
         if (
-            (agent.x**2 + (agent.y - self.config["field"]["height"] / 2) ** 2) ** 0.5
-            < self.config["field"]["goal_radius"]
-        ) or (
-            (
-                (agent.x - self.config["field"]["width"]) ** 2
-                + (agent.y - self.config["field"]["height"] / 2) ** 2
-            )
-            ** 0.5
-            < self.config["field"]["goal_radius"]
+            target_distance
+            < 4
+            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
+            / 9
         ):
-            in_goal_penalty = -1000
+            positive_goal = (self.config["field"]["width"] - target_distance) ** 2
+        if (
+            own_distance
+            < 5
+            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
+            / 9
+        ):
+            negative_goal = (self.config["field"]["width"] - own_distance) ** 2
+
+        distance_to_goal_reward = 10 * (positive_goal - negative_goal)
+
+        # print(
+        #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
+        # )
+
+        distance_to_puck_positive = (
+            -500 * (((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5) ** 2
+        )
+
+        # direction_to_puck = -100 * abs(
+        #     math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
+        # )
+
+        # in_goal_penalty = 0
+
+        # if (
+        #     (agent.x**2 + (agent.y - self.config["field"]["height"] / 2) ** 2) ** 0.5
+        #     < self.config["field"]["goal_radius"]
+        # ) or (
+        #     (
+        #         (agent.x - self.config["field"]["width"]) ** 2
+        #         + (agent.y - self.config["field"]["height"] / 2) ** 2
+        #     )
+        #     ** 0.5
+        #     < self.config["field"]["goal_radius"]
+        # ):
+        #     in_goal_penalty = -100000
 
         closeness_to_wall_penalty = 0
         if agent.x < 50 or agent.x > self.config["field"]["width"] - 50:
-            closeness_to_wall_penalty -= 10000
+            closeness_to_wall_penalty -= 100000
         if agent.y < 50 or agent.y > self.config["field"]["height"] - 50:
-            closeness_to_wall_penalty -= 10000
+            closeness_to_wall_penalty -= 100000
 
         reward = (
-            +distance_to_goal_reward
-            + direction_to_puck
-            + distance_to_puck_positive
-            + in_goal_penalty
+            # +distance_to_goal_reward +
+            distance_to_puck_positive
+            # direction_to_puck +
+            # + in_goal_penalty
             + closeness_to_wall_penalty
-        ) / 1000
+        ) / 100000
 
-        print(f"Agent: {agent.id}, reward: {reward}")
+        # print(f"Agent: {agent.id}, reward: {reward}")
 
         return reward
 
