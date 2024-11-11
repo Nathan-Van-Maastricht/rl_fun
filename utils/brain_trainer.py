@@ -12,7 +12,7 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.001, weight_decay=1e-5
+            self.agent.parameters(), lr=0.000001, weight_decay=1e-5
         )
 
         self.epoch = 0
@@ -55,6 +55,8 @@ class BrainTrainer:
                         ]
                     )
                     actions.append([accelerating, direction])
+                    print(f"{direction_probabilities=}")
+                    print(f"{direction=}")
 
                 agent.action(accelerating.item(), direction.item() - 1)
 
@@ -82,12 +84,12 @@ class BrainTrainer:
 
     def update_network(self, actions, rewards, probabilities):
         print(f"{self.epoch}: Updating network")
-        # returns = self.calculate_returns(rewards)
+        returns = self.calculate_returns(rewards)
         policy_loss = 0
 
         log_probabilities = 0
         for action_probabilities, action, reward in zip(
-            probabilities, actions, rewards
+            probabilities, actions, returns
         ):
             log_probabilities = torch.log(action_probabilities[1])
             # print(f"{action_probabilities[1]=}")
@@ -132,14 +134,14 @@ class BrainTrainer:
         ):
             negative_goal = (self.config["field"]["width"] - own_distance) ** 2
 
-        distance_to_goal_reward = 10 * (positive_goal - negative_goal)
+        distance_to_goal_reward = 5 * (positive_goal - negative_goal)
 
         # print(
         #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
         # )
 
-        distance_to_puck_positive = (
-            -500 * (((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5) ** 2
+        distance_to_puck = (
+            -10 * (((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5) ** 2.5
         )
 
         # direction_to_puck = -100 * abs(
@@ -162,14 +164,20 @@ class BrainTrainer:
         #     in_goal_penalty = -100000
 
         closeness_to_wall_penalty = 0
-        if agent.x < 50 or agent.x > self.config["field"]["width"] - 50:
-            closeness_to_wall_penalty -= 100000
-        if agent.y < 50 or agent.y > self.config["field"]["height"] - 50:
-            closeness_to_wall_penalty -= 100000
+        if (agent.x < (50 + self.config["puck"]["radius"])) or (
+            agent.x
+            > self.config["field"]["width"] - (50 + self.config["puck"]["radius"])
+        ):
+            closeness_to_wall_penalty -= 10000
+        if (agent.y < (50 + self.config["puck"]["radius"])) or (
+            agent.y
+            > self.config["field"]["height"] - (50 + self.config["puck"]["radius"])
+        ):
+            closeness_to_wall_penalty -= 10000
 
         reward = (
-            # +distance_to_goal_reward +
-            distance_to_puck_positive
+            +distance_to_goal_reward
+            + distance_to_puck
             # direction_to_puck +
             # + in_goal_penalty
             + closeness_to_wall_penalty
@@ -183,7 +191,7 @@ class BrainTrainer:
         returns = []
         culmulative_reward = 0
         for reward in reversed(rewards):
-            returns.append(reward + 0.99 * culmulative_reward)
+            returns.append(reward + 0.98 * culmulative_reward)
 
         return list(reversed(returns))
 
