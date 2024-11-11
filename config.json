@@ -1,7 +1,7 @@
 {
-    "total_frames": 28800,
+    "total_frames": 1000,
     "visualise": true,
-    "max_fps": 120,
+    "max_fps": 200,
     "tiebreak": true,
     "friction": 0.99,
     "field": {
@@ -35,7 +35,7 @@
     },
     "agent": {
         "radius": 20,
-        "max_speed": 3,
+        "max_speed": 2,
         "reflect_energy_loss": 0.98
     }
 }
