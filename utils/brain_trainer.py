@@ -55,8 +55,6 @@ class BrainTrainer:
                         ]
                     )
                     actions.append([accelerating, direction])
-                    print(f"{direction_probabilities=}")
-                    print(f"{direction=}")
 
                 agent.action(accelerating.item(), direction.item() - 1)
 
