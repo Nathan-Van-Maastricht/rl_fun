@@ -1,8 +1,8 @@
+import math
+import random
+
 import torch
 import torch.optim as optim
-
-import random
-import math
 
 from environment.game import Game
 
@@ -56,9 +56,9 @@ class BrainTrainer:
                     actions.append([accelerating, direction])
 
                 if agent.team == 0:
-                    agent.action(accelerating.item(), ((direction.item() - 5) / 40))
+                    agent.action(accelerating.item(), direction.item() - 1)
                 else:
-                    agent.action(True, (random.randint(0, 20) - 10) / 40)
+                    agent.action(True, random.randint(-1, 1))
 
             # update state
             goal_state = game.update()
@@ -73,7 +73,7 @@ class BrainTrainer:
             if frame + 1 == self.config["total_frames"]:
                 break
 
-        self.update_network(actions, rewards, probabilities)
+        # self.update_network(actions, rewards, probabilities)
         self.epoch += 1
 
         print("finished training")

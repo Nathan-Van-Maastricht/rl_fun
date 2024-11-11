@@ -1,6 +1,7 @@
-import pygame
 import math
 import random
+
+import pygame
 
 
 class Agent:
@@ -35,7 +36,9 @@ class Agent:
     def action(self, accelerating, direction):
         # direction must be between -0.4r and 0.4r
         # accelerating is either 0 or 1
-        self.direction = self.direction + direction
+        self.direction = (
+            self.direction + direction / 57
+        )  # make it roughly 1 degree of rotation
         if self.direction < -math.pi:
             self.direction += 2 * math.pi
         elif self.direction > math.pi:
