@@ -14,7 +14,6 @@ class Game:
         self.config = config
         self.field = Field(self.config)
 
-        self.reset_positions()
         self.score = [0, 0]
         self.frame = 0
 
@@ -28,6 +27,8 @@ class Game:
             self.clock = pygame.time.Clock()
             self.score_font = pygame.font.SysFont("Arial", 64)
             self.frame_font = pygame.font.SysFont("Arial", 16)
+
+        self.reset_positions()
 
     def create_agents(self):
         self.agents = dict()

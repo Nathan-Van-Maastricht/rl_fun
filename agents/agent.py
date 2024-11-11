@@ -1,6 +1,7 @@
-import pygame
 import math
 import random
+
+import pygame
 
 
 class Agent:
@@ -17,6 +18,10 @@ class Agent:
         self.max_speed = config["agent"]["max_speed"]
         self.team = team
         self.id = id
+        self.reward = 0
+        if self.config["visualise"]:
+            self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
+            self.reward_font = pygame.font.SysFont("Arial", 20, bold=True)
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
@@ -25,6 +30,14 @@ class Agent:
         end_x = self.x + math.cos(self.direction) * self.radius
         end_y = self.y + math.sin(self.direction) * self.radius
         pygame.draw.line(screen, (255, 255, 255), (self.x, self.y), (end_x, end_y), 2)
+
+        # Draw ID
+        id = self.id_font.render(str(self.id), True, (0, 0, 0))
+        screen.blit(id, (self.x, self.y - 10))
+
+        # Draw reward
+        reward = self.reward_font.render(f"{self.reward:.2f}", True, (0, 0, 0))
+        screen.blit(reward, (self.x, self.y + 10))
 
     def actions(self, puck):
         new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
@@ -35,7 +48,9 @@ class Agent:
     def action(self, accelerating, direction):
         # direction must be between -0.4r and 0.4r
         # accelerating is either 0 or 1
-        self.direction = self.direction + direction
+        self.direction = (
+            self.direction + direction / 57
+        )  # make it roughly 1 degree of rotation
         if self.direction < -math.pi:
             self.direction += 2 * math.pi
         elif self.direction > math.pi:

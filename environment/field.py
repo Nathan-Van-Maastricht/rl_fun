@@ -31,28 +31,6 @@ class Field:
             self.config["field"]["goal_radius"],
         )
 
-        # Draw goals
-        # pygame.draw.rect(
-        #     screen,
-        #     self.config["field"]["goal_color0"],
-        #     (
-        #         0,
-        #         self.height // 2 - self.goal_height // 2,
-        #         self.goal_width,
-        #         self.goal_height,
-        #     ),
-        # )
-        # pygame.draw.rect(
-        #     screen,
-        #     self.config["field"]["goal_color1"],
-        #     (
-        #         self.width - self.goal_width,
-        #         self.height // 2 - self.goal_height // 2,
-        #         self.goal_width,
-        #         self.goal_height,
-        #     ),
-        # )
-
         # Draw center line
         pygame.draw.line(
             screen,
@@ -60,3 +38,19 @@ class Field:
             (self.width // 2, 0),
             (self.width // 2, self.height),
         )
+
+        # Draw margins
+        pygame.draw.line(screen, (255, 255, 255), (50, 50), (self.width - 50, 50))
+        pygame.draw.line(
+            screen,
+            (255, 255, 255),
+            (self.width - 50, 50),
+            (self.width - 50, self.height - 50),
+        )
+        pygame.draw.line(
+            screen,
+            (255, 255, 255),
+            (self.width - 50, self.height - 50),
+            (50, self.height - 50),
+        )
+        pygame.draw.line(screen, (255, 255, 255), (50, self.height - 50), (50, 50))

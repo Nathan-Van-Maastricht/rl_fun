@@ -1,12 +1,12 @@
 {
-    "total_frames": 28800,
+    "total_frames": 1000,
     "visualise": true,
-    "max_fps": 120,
+    "max_fps": 200,
     "tiebreak": true,
     "friction": 0.99,
     "field": {
-        "width": 1000,
-        "height": 800,
+        "width": 800,
+        "height": 600,
         "goal_radius": 80,
         "color": [
             0,
@@ -35,7 +35,7 @@
     },
     "agent": {
         "radius": 20,
-        "max_speed": 3,
+        "max_speed": 2,
         "reflect_energy_loss": 0.98
     }
 }

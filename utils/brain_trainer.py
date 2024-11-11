@@ -1,14 +1,13 @@
+import random
+
 import torch
 import torch.optim as optim
-
-import random
-import math
 
 from environment.game import Game
 
 
 class BrainTrainer:
-    def __init__(self, agent, critic, config):
+    def __init__(self, agent, config):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
@@ -28,7 +27,7 @@ class BrainTrainer:
         frame = 0
 
         while True:
-            random_picked = set()
+            agents_not_used = set()
             for agent in game.agents.values():
                 # observe
                 state = torch.FloatTensor(game.get_observation(agent.id)).to(
@@ -39,7 +38,7 @@ class BrainTrainer:
                 accelerating_probabilities, direction_probabilities = self.agent(state)
 
                 if random.random() < 0.15:
-                    random_picked.add(agent)
+                    agents_not_used.add(agent)
                     direction = torch.randint(
                         direction_probabilities.shape[0], (1,)
                     ).to(self.device)
@@ -57,21 +56,19 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), ((direction.item() - 5) / 20))
-                # if agent.team == 0:
-                #     agent.action(accelerating.item(), ((direction.item() - 20) / 50))
-                # else:
-                #     agent.action(True, (random.randint(0, 40) - 20) / 50)
+                agent.action(accelerating.item(), direction.item() - 1)
 
             # update state
             goal_state = game.update()
-            game.draw()
+            if self.config["visualise"]:
+                game.draw()
 
             # determine rewards
             for agent in game.agents.values():
-                if agent in random_picked:
+                if agent in agents_not_used:
                     continue
                 rewards.append(self.reward(game.puck, goal_state, agent))
+                agent.reward = rewards[-1]
 
             frame += 1
             if frame + 1 == self.config["total_frames"]:
@@ -93,9 +90,13 @@ class BrainTrainer:
             probabilities, actions, rewards
         ):
             log_probabilities = torch.log(action_probabilities[1])
+            # print(f"{action_probabilities[1]=}")
+            # print(f"{log_probabilities=}")
+            # print(f"{reward=}")
             policy_loss -= log_probabilities * reward
             log_probabilities = torch.log(action_probabilities[0])
             policy_loss -= log_probabilities * reward
+            # print(f"{policy_loss=}")
 
         print(f"{policy_loss=}")
 
@@ -105,47 +106,78 @@ class BrainTrainer:
         self.agent_optimiser.step()
 
     def reward(self, puck, goal_state, agent):
-        # distance_to_goal1 = puck.distance_to_goal(1)
-        # distance_to_goal0 = puck.distance_to_goal(0)
-
-        # distance_to_goal_reward = -10 * distance_to_goal1
-
-        distance_to_puck_positive = -5 * (
-            ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
-        )
-
-        # distance_to_puck_negative = sum(
-        #     [
-        #         ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
-        #         for agent in agents
-        #         if agent.team == 1
-        #     ]
-        # )
-
-        direction_to_puck = (
-            -10
-            * (math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction) ** 2
-        )
-
-        in_goal_penalty = 0
+        if agent.team == 0:
+            target_distance = puck.distance_to_goal(1)
+            own_distance = puck.distance_to_goal(0)
+        else:
+            target_distance = puck.distance_to_goal(0)
+            own_distance = puck.distance_to_goal(1)
+        # print(f"{distance_to_goal0=}")
+        # print(f"{distance_to_goal1=}")
+        positive_goal = 0
+        negative_goal = 0
 
         if (
-            (agent.x**2 + (agent.y - self.config["field"]["height"] / 2) ** 2) ** 0.5
-            < self.config["field"]["goal_radius"]
-        ) or (
-            (
-                (agent.x - self.config["field"]["width"]) ** 2
-                + (agent.y - self.config["field"]["height"] / 2) ** 2
-            )
-            ** 0.5
-            < self.config["field"]["goal_radius"]
+            target_distance
+            < 4
+            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
+            / 9
         ):
-            in_goal_penalty = -10000
+            positive_goal = (self.config["field"]["width"] - target_distance) ** 2
+        if (
+            own_distance
+            < 5
+            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
+            / 9
+        ):
+            negative_goal = (self.config["field"]["width"] - own_distance) ** 2
 
-        return (
-            # distance_to_goal_reward
-            +direction_to_puck + distance_to_puck_positive + in_goal_penalty
+        distance_to_goal_reward = 10 * (positive_goal - negative_goal)
+
+        # print(
+        #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
+        # )
+
+        distance_to_puck_positive = (
+            -500 * (((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5) ** 2
         )
+
+        # direction_to_puck = -100 * abs(
+        #     math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
+        # )
+
+        # in_goal_penalty = 0
+
+        # if (
+        #     (agent.x**2 + (agent.y - self.config["field"]["height"] / 2) ** 2) ** 0.5
+        #     < self.config["field"]["goal_radius"]
+        # ) or (
+        #     (
+        #         (agent.x - self.config["field"]["width"]) ** 2
+        #         + (agent.y - self.config["field"]["height"] / 2) ** 2
+        #     )
+        #     ** 0.5
+        #     < self.config["field"]["goal_radius"]
+        # ):
+        #     in_goal_penalty = -100000
+
+        closeness_to_wall_penalty = 0
+        if agent.x < 50 or agent.x > self.config["field"]["width"] - 50:
+            closeness_to_wall_penalty -= 100000
+        if agent.y < 50 or agent.y > self.config["field"]["height"] - 50:
+            closeness_to_wall_penalty -= 100000
+
+        reward = (
+            # +distance_to_goal_reward +
+            distance_to_puck_positive
+            # direction_to_puck +
+            # + in_goal_penalty
+            + closeness_to_wall_penalty
+        ) / 100000
+
+        # print(f"Agent: {agent.id}, reward: {reward}")
+
+        return reward
 
     def calculate_returns(self, rewards):
         returns = []
