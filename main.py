@@ -1,8 +1,7 @@
-from environment.game import Game
-from utils.config import Config
-from utils.brain_trainer import BrainTrainer
 from agents.brain import Brain
-from agents.brain import BrainValue
+from environment.game import Game
+from utils.brain_trainer import BrainTrainer
+from utils.config import Config
 
 
 def main():
@@ -12,14 +11,14 @@ def main():
 
 
 def train():
-    brain = Brain(16, 128)
-    critic = BrainValue(16, 128)
+    brain = Brain(16, 64)
     config = Config("config.json")
-    trainer = BrainTrainer(brain, critic, config)
-    for epoch in range(20):
+    trainer = BrainTrainer(brain, config)
+    for epoch in range(1000):
         print(f"Starting epoch {epoch}")
         trainer.train_episode()
-        # brain.save(f"weights/{epoch}.pth")
+
+        brain.save(f"weights/{epoch}.pth")
 
 
 if __name__ == "__main__":
