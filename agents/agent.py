@@ -46,8 +46,6 @@ class Agent:
             self.accelerating = not self.accelerating
 
     def action(self, accelerating, direction):
-        # direction must be between -0.4r and 0.4r
-        # accelerating is either 0 or 1
         self.direction = (
             self.direction + direction / 57
         )  # make it roughly 1 degree of rotation
