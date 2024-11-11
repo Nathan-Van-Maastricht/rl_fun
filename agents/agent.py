@@ -18,7 +18,8 @@ class Agent:
         self.max_speed = config["agent"]["max_speed"]
         self.team = team
         self.id = id
-        self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
+        if self.config["visualise"]:
+            self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
