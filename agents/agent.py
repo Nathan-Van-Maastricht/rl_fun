@@ -18,8 +18,10 @@ class Agent:
         self.max_speed = config["agent"]["max_speed"]
         self.team = team
         self.id = id
+        self.reward = 0
         if self.config["visualise"]:
             self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
+            self.reward_font = pygame.font.SysFont("Arial", 20, bold=True)
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
@@ -32,6 +34,10 @@ class Agent:
         # Draw ID
         id = self.id_font.render(str(self.id), True, (0, 0, 0))
         screen.blit(id, (self.x, self.y - 10))
+
+        # Draw reward
+        reward = self.reward_font.render(f"{self.reward:.2f}", True, (0, 0, 0))
+        screen.blit(reward, (self.x, self.y + 10))
 
     def actions(self, puck):
         new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
