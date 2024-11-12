@@ -35,8 +35,8 @@ class Game:
 
         # Team 0
         self.agents[0] = Agent(
-            200 + (random.random() - 0.5) * 10,
-            150 + (random.random() - 0.5) * 10,
+            200 + (random.random() - 0.5) * 50,
+            150 + (random.random() - 0.5) * 50,
             self.config,
             team=0,
             id=0,
@@ -44,8 +44,8 @@ class Game:
             direction=0,
         )
         self.agents[1] = Agent(
-            200 + (random.random() - 0.5) * 10,
-            300 + (random.random() - 0.5) * 10,
+            200 + (random.random() - 0.5) * 50,
+            300 + (random.random() - 0.5) * 50,
             self.config,
             team=0,
             id=1,
@@ -54,8 +54,8 @@ class Game:
         )
 
         self.agents[2] = Agent(
-            200 + (random.random() - 0.5) * 10,
-            450 + (random.random() - 0.5) * 10,
+            200 + (random.random() - 0.5) * 50,
+            450 + (random.random() - 0.5) * 50,
             self.config,
             team=0,
             id=2,
@@ -65,8 +65,8 @@ class Game:
 
         # Team 1
         self.agents[3] = Agent(
-            600 + (random.random() - 0.5) * 10,
-            150 + (random.random() - 0.5) * 10,
+            600 + (random.random() - 0.5) * 50,
+            150 + (random.random() - 0.5) * 50,
             self.config,
             team=1,
             id=3,
@@ -74,8 +74,8 @@ class Game:
             direction=math.pi,
         )
         self.agents[4] = Agent(
-            600 + (random.random() - 0.5) * 10,
-            300 + (random.random() - 0.5) * 10,
+            600 + (random.random() - 0.5) * 50,
+            300 + (random.random() - 0.5) * 50,
             self.config,
             team=1,
             id=4,
@@ -83,8 +83,8 @@ class Game:
             direction=math.pi,
         )
         self.agents[5] = Agent(
-            600 + (random.random() - 0.5) * 10,
-            450 + (random.random() - 0.5) * 10,
+            600 + (random.random() - 0.5) * 50,
+            450 + (random.random() - 0.5) * 50,
             self.config,
             team=1,
             id=5,
@@ -216,17 +216,17 @@ class Game:
             self.score[1] += 1
         elif goal_state == -1:
             self.score[0] += 1
+        # self.puck = Puck(
+        #     self.config["field"]["width"] / 2,
+        #     self.config["field"]["height"] / 2,
+        #     self.config,
+        # )
         self.puck = Puck(
-            self.config["field"]["width"] / 2,
-            self.config["field"]["height"] / 2,
+            self.config["field"]["width"] / 2 + random.gauss(0, 100),
+            self.config["field"]["height"] / 2 + random.gauss(0, 30),
             self.config,
         )
         self.create_agents()
-        # self.puck = Puck(
-        #     self.config["field"]["width"] / 2 + random.gauss(0, 100),
-        #     self.config["field"]["height"] / 2 + random.gauss(0, 30),
-        #     self.config,
-        # )
 
         for agent in self.agents.values():
             agent.accelerating = True
