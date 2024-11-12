@@ -92,7 +92,14 @@ class Game:
             direction=random.random() * math.pi * 2 - math.pi,
         )
 
-    def get_observation(self, agent_id):
+    def distance_between_points(self, x0, y0, x1, y1):
+        return ((x0 - x1) ** 2 + (y0 - y1) ** 2) ** 0.5
+
+    def direction_to_point(self, x_start, y_start, x_terminal, y_terminal):
+        return math.atan2(y_terminal - y_start, x_terminal - x_start)
+
+    def get_observation(self, agent):
+        # obs1
         # puck position (x, y) 2
         # own position (x, y) 2
         # is_accelerating (0/1) 1
@@ -104,34 +111,96 @@ class Game:
         # enemy 3 position (x, y) 2
         # in_dim 16
 
+        # observation = []
+        # # puck position
+        # observation.append(self.puck.x)
+        # observation.append(self.puck.y)
+
+        # # own position
+        # observation.append(self.agents[agent_id].x)
+        # observation.append(self.agents[agent_id].y)
+
+        # # is_accelerating
+        # observation.append(self.agents[agent_id].accelerating)
+
+        # # direction
+        # observation.append(self.agents[agent_id].direction)
+
+        # # team and enemy lists
+        # team_mates = []
+        # enemy = []
+        # for agent in self.agents.values():
+        #     if agent.id == agent_id:
+        #         continue
+
+        #     if agent.team == self.agents[agent_id].team:
+        #         team_mates.append(agent.x)
+        #         team_mates.append(agent.y)
+        #     else:
+        #         enemy.append(agent.x)
+        #         enemy.append(agent.y)
+        # observation.extend(team_mates)
+        # observation.extend(enemy)
+
+        # obs2
+        # direction to puck 1
+        # distance to puck 1
+        # is_accelerating 1
+        # direction 1
+        # direction to team mate 1 1
+        # distance to team mate 1 1
+        # direction to team mate 2 1
+        # distance to team mate 2 1
+        # direction to enemy 1 1
+        # distance to enemy 1 1
+        # direction to enemy 2 1
+        # distance to enemy 2 1
+        # direction to enemy 3 1
+        # distance to enemy 3 1
+        # in dim 14
+
         observation = []
-        # puck position
-        observation.append(self.puck.x)
-        observation.append(self.puck.y)
 
-        # own position
-        observation.append(self.agents[agent_id].x)
-        observation.append(self.agents[agent_id].y)
+        observation.append(
+            self.direction_to_point(agent.x, agent.y, self.puck.x, self.puck.y)
+        )
 
-        # is_accelerating
-        observation.append(self.agents[agent_id].accelerating)
+        observation.append(
+            self.distance_between_points(agent.x, agent.y, self.puck.x, self.puck.y)
+        )
+        observation.append(agent.accelerating)
+        observation.append(agent.direction)
 
-        # direction
-        observation.append(self.agents[agent_id].direction)
-
-        # team and enemy lists
+        # # team and enemy lists
         team_mates = []
         enemy = []
-        for agent in self.agents.values():
-            if agent.id == agent_id:
+        for other_agent in self.agents.values():
+            if other_agent.id == agent.id:
                 continue
 
-            if agent.team == self.agents[agent_id].team:
-                team_mates.append(agent.x)
-                team_mates.append(agent.y)
+            if other_agent.team == agent.team:
+                team_mates.append(
+                    self.direction_to_point(
+                        agent.x, agent.y, other_agent.x, other_agent.y
+                    )
+                )
+                team_mates.append(
+                    self.distance_between_points(
+                        agent.x, agent.y, other_agent.x, other_agent.y
+                    )
+                )
             else:
-                enemy.append(agent.x)
-                enemy.append(agent.y)
+                enemy.append(
+                    self.direction_to_point(
+                        agent.x, agent.y, other_agent.x, other_agent.y
+                    )
+                )
+                enemy.append(
+                    self.distance_between_points(
+                        agent.x, agent.y, other_agent.x, other_agent.y
+                    )
+                )
+
         observation.extend(team_mates)
         observation.extend(enemy)
 
@@ -144,9 +213,14 @@ class Game:
             self.score[0] += 1
         self.agents = []
         self.create_agents()
+        # self.puck = Puck(
+        #     self.config["field"]["width"] / 2 + random.gauss(0, 100),
+        #     self.config["field"]["height"] / 2 + random.gauss(0, 30),
+        #     self.config,
+        # )
         self.puck = Puck(
-            self.config["field"]["width"] / 2 + random.gauss(0, 100),
-            self.config["field"]["height"] / 2 + random.gauss(0, 30),
+            self.config["field"]["width"] / 2,
+            self.config["field"]["height"] / 2,
             self.config,
         )
 
