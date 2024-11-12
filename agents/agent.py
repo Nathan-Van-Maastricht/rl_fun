@@ -35,15 +35,26 @@ class Agent:
         reward = self.reward_font.render(f"{self.reward:.2f}", True, (0, 0, 0))
         screen.blit(reward, (self.x, self.y + 10))
 
-        # Draw last direction
+        # Draw last direction indicator
+        colour = (255, 255, 255)
+        position = (self.x - 10, self.y - 10, 20, 10)
+        match self.last_direction:
+            case -2:
+                colour = (0, 255, 0)
+                position = (self.x - 10, self.y - 10, 10, 10)
+            case -1:
+                colour = (255, 0, 255)
+                position = (self.x - 10, self.y - 10, 10, 10)
+            case 1:
+                colour = (255, 0, 255)
+                position = (self.x, self.y - 10, 10, 10)
+            case 2:
+                colour = (0, 255, 0)
+                position = (self.x, self.y - 10, 10, 10)
         pygame.draw.rect(
             screen,
-            (
-                255 * (self.last_direction > 0),
-                255 * (abs(self.last_direction) == 2),
-                255 * (self.last_direction < 0),
-            ),
-            (self.x - 10, self.y - 10, 10, 10),
+            colour,
+            position,
         )
 
         # Draw direction indicator
