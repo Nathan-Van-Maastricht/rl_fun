@@ -79,9 +79,9 @@ class Agent:
         self.direction = (
             self.direction + direction / 57
         )  # make it roughly 1 degree of rotation
-        if self.direction < -math.pi:
+        while self.direction < -math.pi:
             self.direction += 2 * math.pi
-        elif self.direction > math.pi:
+        while self.direction > math.pi:
             self.direction -= 2 * math.pi
         self.accelerating = accelerating
 
