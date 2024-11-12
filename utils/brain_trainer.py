@@ -1,5 +1,6 @@
 import random
 
+import pygame
 import torch
 import torch.optim as optim
 
@@ -12,10 +13,16 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.000001, weight_decay=1e-5
+            self.agent.parameters(), lr=0.00001, weight_decay=1e-5
         )
 
         self.epoch = 0
+        self.epsilon = 0.5
+        self.epsilon_decay = 0.025
+        self.epsilon_min = 0.1
+
+    def decay_epsilon(self):
+        self.epsilon = max(self.epsilon - self.epsilon_decay, self.epsilon_min)
 
     def train_episode(self):
         game = Game(self.config)
@@ -25,6 +32,9 @@ class BrainTrainer:
         probabilities = []
 
         frame = 0
+
+        total_explore = 0
+        total_exploit = 0
 
         while True:
             agents_not_used = set()
@@ -37,15 +47,24 @@ class BrainTrainer:
                 # act
                 accelerating_probabilities, direction_probabilities = self.agent(state)
 
-                if random.random() < 0.15:
-                    agents_not_used.add(agent)
+                if random.random() < self.epsilon:
+                    total_explore += 1
+                    # agents_not_used.add(agent)
                     direction = torch.randint(
                         direction_probabilities.shape[0], (1,)
                     ).to(self.device)
                     accelerating = torch.randint(
                         accelerating_probabilities.shape[0], (1,)
                     ).to(self.device)
+                    probabilities.append(
+                        [
+                            accelerating_probabilities[accelerating],
+                            direction_probabilities[direction],
+                        ]
+                    )
+                    actions.append([accelerating, direction])
                 else:
+                    total_exploit += 1
                     direction = direction_probabilities.multinomial(1)
                     accelerating = accelerating_probabilities.multinomial(1)
                     probabilities.append(
@@ -73,6 +92,14 @@ class BrainTrainer:
             frame += 1
             if frame + 1 == self.config["total_frames"]:
                 break
+
+        print(f"{self.epsilon=:.2f}")
+        print(f"{total_explore=}")
+        print(f"{total_exploit=}")
+        print(f"Explore ratio: {100*total_explore/(total_explore + total_exploit):.2f}")
+        print(f"Exploit ratio: {100*total_exploit/(total_explore+total_exploit):.2f}")
+
+        pygame.quit()
 
         self.update_network(actions, rewards, probabilities)
         self.epoch += 1
@@ -130,9 +157,11 @@ class BrainTrainer:
         #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
         # )
 
-        distance_to_puck = (
-            -10 * (((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5) ** 2.5
-        )
+        distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
+
+        distance_to_puck_reward = -10 * distance_to_puck**2.5
+        if distance_to_puck < 10:
+            distance_to_goal_reward += 5000
 
         # direction_to_puck = -100 * abs(
         #     math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
@@ -167,7 +196,7 @@ class BrainTrainer:
 
         reward = (
             +distance_to_goal_reward
-            + distance_to_puck
+            + distance_to_puck_reward
             # direction_to_puck +
             # + in_goal_penalty
             + closeness_to_wall_penalty
