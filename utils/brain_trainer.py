@@ -44,7 +44,7 @@ class BrainTrainer:
 
                 # act
                 accelerating_probabilities, direction_probabilities = self.agent(state)
-                if frame == 0:
+                if frame == 0 or random.random() < 0.005:
                     print(f"{accelerating_probabilities=}")
                     print(f"{direction_probabilities=}")
 
