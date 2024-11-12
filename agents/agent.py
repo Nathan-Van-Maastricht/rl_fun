@@ -19,18 +19,13 @@ class Agent:
         self.team = team
         self.id = id
         self.reward = 0
+        self.last_direction = 0
         if self.config["visualise"]:
             self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
             self.reward_font = pygame.font.SysFont("Arial", 20, bold=True)
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
-
-        # Draw direction indicator
-        end_x = self.x + math.cos(self.direction) * self.radius
-        end_y = self.y + math.sin(self.direction) * self.radius
-        direction_colour = (255, 255, 255) if self.accelerating else (0, 0, 0)
-        pygame.draw.line(screen, direction_colour, (self.x, self.y), (end_x, end_y), 2)
 
         # Draw ID
         id = self.id_font.render(str(self.id), True, (0, 0, 0))
@@ -40,6 +35,23 @@ class Agent:
         reward = self.reward_font.render(f"{self.reward:.2f}", True, (0, 0, 0))
         screen.blit(reward, (self.x, self.y + 10))
 
+        # Draw last direction
+        pygame.draw.rect(
+            screen,
+            (
+                255 * (self.last_direction > 0),
+                255 * (abs(self.last_direction) == 2),
+                255 * (self.last_direction < 0),
+            ),
+            (self.x - 10, self.y - 10, 10, 10),
+        )
+
+        # Draw direction indicator
+        end_x = self.x + math.cos(self.direction) * self.radius
+        end_y = self.y + math.sin(self.direction) * self.radius
+        direction_colour = (255, 255, 255) if self.accelerating else (0, 0, 0)
+        pygame.draw.line(screen, direction_colour, (self.x, self.y), (end_x, end_y), 2)
+
     def actions(self, puck):
         new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
         self.direction = new_dir
@@ -47,6 +59,7 @@ class Agent:
             self.accelerating = not self.accelerating
 
     def action(self, accelerating, direction):
+        self.last_direction = direction
         self.direction = (
             self.direction + direction / 57
         )  # make it roughly 1 degree of rotation
