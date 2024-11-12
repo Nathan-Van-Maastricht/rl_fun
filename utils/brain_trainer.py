@@ -56,7 +56,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 1)
+                agent.action(accelerating.item(), direction.item() - 2)
 
             # update state
             goal_state = game.update()
@@ -112,27 +112,19 @@ class BrainTrainer:
         else:
             target_distance = puck.distance_to_goal(0)
             own_distance = puck.distance_to_goal(1)
-        # print(f"{distance_to_goal0=}")
-        # print(f"{distance_to_goal1=}")
         positive_goal = 0
         negative_goal = 0
 
-        if (
-            target_distance
-            < 4
-            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
-            / 9
-        ):
-            positive_goal = (self.config["field"]["width"] - target_distance) ** 2
-        if (
-            own_distance
-            < 5
-            * (self.config["field"]["width"] - self.config["field"]["goal_radius"])
-            / 9
-        ):
-            negative_goal = (self.config["field"]["width"] - own_distance) ** 2
+        if target_distance < 4 * self.config["field"]["width"] / 9:
+            positive_goal = target_distance
+        if own_distance < 5 * self.config["field"]["width"] / 9:
+            negative_goal = own_distance
 
-        distance_to_goal_reward = 5 * (positive_goal - negative_goal)
+        distance_to_goal_reward = (
+            ((-1) ** (negative_goal > positive_goal))
+            * 10
+            * (positive_goal - negative_goal) ** 2
+        )
 
         # print(
         #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
@@ -171,7 +163,7 @@ class BrainTrainer:
             agent.y
             > self.config["field"]["height"] - (50 + self.config["puck"]["radius"])
         ):
-            closeness_to_wall_penalty -= 10000
+            closeness_to_wall_penalty -= 1000000
 
         reward = (
             +distance_to_goal_reward
