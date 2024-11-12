@@ -20,12 +20,17 @@ class Agent:
         self.id = id
         self.reward = 0
         self.last_direction = 0
+        self.touched_puck = 0
         if self.config["visualise"]:
             self.id_font = pygame.font.SysFont("Arial", 20, bold=True)
             self.reward_font = pygame.font.SysFont("Arial", 20, bold=True)
 
     def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        colour = self.color
+        if self.touched_puck > 0:
+            colour = (0, 0, 0)
+
+        pygame.draw.circle(screen, colour, (int(self.x), int(self.y)), self.radius)
 
         # Draw ID
         id = self.id_font.render(str(self.id), True, (0, 0, 0))
@@ -128,7 +133,9 @@ class Agent:
         dx = puck.x - self.x
         dy = puck.y - self.y
         distance = math.sqrt(dx**2 + dy**2)
+        self.touched_puck -= 1
         if distance < puck.radius + self.radius:  # Collision detected
+            self.touched_puck = 10
             # Calculate collision normal
             normal_x = dx / distance
             normal_y = dy / distance
