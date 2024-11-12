@@ -19,7 +19,7 @@ class BrainTrainer:
 
         self.epoch = 0
         self.epsilon = 0.5
-        self.epsilon_decay = 0.0125
+        self.epsilon_decay = 0.00625
         self.epsilon_min = 0.1
 
     def decay_epsilon(self):
@@ -50,12 +50,16 @@ class BrainTrainer:
 
                 if random.random() < self.epsilon:
                     total_explore += 1
-                    direction = torch.randint(
-                        direction_probabilities.shape[0], (1,)
-                    ).to(self.device)
-                    accelerating = torch.randint(
-                        accelerating_probabilities.shape[0], (1,)
-                    ).to(self.device)
+                    # direction = torch.randint(
+                    #     direction_probabilities.shape[0], (1,)
+                    # ).to(self.device)
+
+                    # accelerating = torch.randint(
+                    #     accelerating_probabilities.shape[0], (1,)
+                    # ).to(self.device)
+                    direction = torch.argmin(direction_probabilities).unsqueeze(0)
+                    accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
+
                     probabilities.append(
                         [
                             accelerating_probabilities[accelerating],
@@ -112,6 +116,10 @@ class BrainTrainer:
         print(f"Score: {game.score}")
 
     def update_network(self, actions, rewards, probabilities):
+        rewards = torch.Tensor(rewards)
+        min_val = rewards.min()
+        max_val = rewards.max()
+        rewards = (rewards - min_val) / (max_val - min_val)
         print(f"{self.epoch}: Updating network")
         returns = self.calculate_returns(rewards)
         policy_loss = 0
@@ -140,13 +148,13 @@ class BrainTrainer:
             target_distance = puck.distance_to_goal(0)
             own_distance = puck.distance_to_goal(1)
 
-        distance_to_goal_reward = 20 * math.exp(
+        distance_to_goal_reward = 100 * math.exp(
             -target_distance / 100
-        ) - 100 * math.exp(-own_distance / 100)
+        ) - 100 * math.exp(-own_distance / 125)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = -2 * math.log(distance_to_puck)
+        distance_to_puck_reward = -4 * math.log(distance_to_puck)
         if (
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
@@ -171,10 +179,10 @@ class BrainTrainer:
             closeness_to_wall_penalty -= 10
 
         reward = (
-            # +distance_to_goal_reward
-            +distance_to_puck_reward
-            # + direction_to_puck_reward
-            # + closeness_to_wall_penalty
+            +distance_to_goal_reward
+            + distance_to_puck_reward
+            + direction_to_puck_reward
+            + closeness_to_wall_penalty
         )
 
         # print(f"Agent: {agent.id}, reward: {reward}")
