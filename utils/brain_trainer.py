@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame
@@ -13,12 +14,12 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.00001, weight_decay=1e-5
+            self.agent.parameters(), lr=0.0001, weight_decay=1e-5
         )
 
         self.epoch = 0
         self.epsilon = 0.5
-        self.epsilon_decay = 0.025
+        self.epsilon_decay = 0.0125
         self.epsilon_min = 0.1
 
     def decay_epsilon(self):
@@ -117,13 +118,9 @@ class BrainTrainer:
             probabilities, actions, returns
         ):
             log_probabilities = torch.log(action_probabilities[1])
-            # print(f"{action_probabilities[1]=}")
-            # print(f"{log_probabilities=}")
-            # print(f"{reward=}")
             policy_loss -= log_probabilities * reward
             log_probabilities = torch.log(action_probabilities[0])
             policy_loss -= log_probabilities * reward
-            # print(f"{policy_loss=}")
 
         print(f"{policy_loss=}")
 
@@ -139,29 +136,31 @@ class BrainTrainer:
         else:
             target_distance = puck.distance_to_goal(0)
             own_distance = puck.distance_to_goal(1)
-        positive_goal = 0
-        negative_goal = 0
+        # positive_goal = 0
+        # negative_goal = 0
 
-        if target_distance < 4 * self.config["field"]["width"] / 9:
-            positive_goal = target_distance
-        if own_distance < 5 * self.config["field"]["width"] / 9:
-            negative_goal = own_distance
+        # if target_distance < 4 * self.config["field"]["width"] / 9:
+        #     positive_goal = target_distance
+        # if own_distance < 5 * self.config["field"]["width"] / 9:
+        #     negative_goal = own_distance
 
-        distance_to_goal_reward = (
-            ((-1) ** (negative_goal > positive_goal))
-            * 10
-            * (positive_goal - negative_goal) ** 2
-        )
-
-        # print(
-        #     f"puck: {puck.x}, {puck.y}, distance0: {distance_to_goal0}, distance1: {distance_to_goal1}, team: {agent.team}, positive: {positive_goal}, negative: {negative_goal}, distance goal reward: {distance_to_goal_reward}"
+        # distance_to_goal_reward = (
+        #     ((-1) ** (negative_goal > positive_goal))
+        #     * 10
+        #     * (positive_goal - negative_goal) ** 2
         # )
+        distance_to_goal_reward = 20 * math.exp(
+            -target_distance / 100
+        ) - 100 * math.exp(-own_distance / 100)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = -10 * distance_to_puck**2.5
-        if distance_to_puck < 10:
-            distance_to_goal_reward += 5000
+        distance_to_puck_reward = -2 * math.log(distance_to_puck)
+        if (
+            distance_to_puck
+            < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
+        ):
+            distance_to_puck_reward += 25
 
         # direction_to_puck = -100 * abs(
         #     math.atan2(puck.y - agent.y, puck.x - agent.x) - agent.direction
@@ -187,12 +186,12 @@ class BrainTrainer:
             agent.x
             > self.config["field"]["width"] - (50 + self.config["puck"]["radius"])
         ):
-            closeness_to_wall_penalty -= 10000
+            closeness_to_wall_penalty -= 10
         if (agent.y < (50 + self.config["puck"]["radius"])) or (
             agent.y
             > self.config["field"]["height"] - (50 + self.config["puck"]["radius"])
         ):
-            closeness_to_wall_penalty -= 1000000
+            closeness_to_wall_penalty -= 10
 
         reward = (
             +distance_to_goal_reward
@@ -200,7 +199,7 @@ class BrainTrainer:
             # direction_to_puck +
             # + in_goal_penalty
             + closeness_to_wall_penalty
-        ) / 100000
+        )
 
         # print(f"Agent: {agent.id}, reward: {reward}")
 
