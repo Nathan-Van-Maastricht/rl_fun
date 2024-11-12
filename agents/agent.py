@@ -1,5 +1,4 @@
 import math
-import random
 
 import pygame
 
@@ -68,11 +67,11 @@ class Agent:
         direction_colour = (255, 255, 255) if self.accelerating else (0, 0, 0)
         pygame.draw.line(screen, direction_colour, (self.x, self.y), (end_x, end_y), 2)
 
-    def actions(self, puck):
-        new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
-        self.direction = new_dir
-        if random.random() < 0.001:
-            self.accelerating = not self.accelerating
+    # def actions(self, puck):
+    #     new_dir = math.atan2(puck.y - self.y, puck.x - self.x)
+    #     self.direction = new_dir
+    #     if random.random() < 0.001:
+    #         self.accelerating = not self.accelerating
 
     def action(self, accelerating, direction):
         self.last_direction = direction
@@ -91,13 +90,15 @@ class Agent:
             self.speed_y += math.sin(self.direction)
         else:
             # Slow down when not accelerating
-            speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
-            if speed < 0.25:  # Stop when speed is negligible
-                self.speed_x = 0
-                self.speed_y = 0
-            elif speed > 0:
-                self.speed_x *= self.config["friction"]  # Friction factor
-                self.speed_y *= self.config["friction"]
+            # speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
+            # if speed < 0.25:  # Stop when speed is negligible
+            #     self.speed_x = 0
+            #     self.speed_y = 0
+            # elif speed > 0:
+            #     self.speed_x *= self.config["friction"]  # Friction factor
+            #     self.speed_y *= self.config["friction"]
+            self.speed_x = 0
+            self.speed_y = 0
 
         # Agent-agent collision detection
         for other_agent in agents.values():
