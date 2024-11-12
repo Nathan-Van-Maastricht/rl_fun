@@ -41,12 +41,16 @@ class BrainTrainer:
             for agent in game.agents.values():
                 # observe
                 state = torch.FloatTensor(game.get_observation(agent)).to(self.device)
+                state_min = torch.min(state)
+                state_max = torch.max(state)
+                state = (state - state_min) / (state_max - state_min)
 
                 # act
                 accelerating_probabilities, direction_probabilities = self.agent(state)
-                if frame == 0 or random.random() < 0.005:
-                    print(f"{accelerating_probabilities=}")
-                    print(f"{direction_probabilities=}")
+                # if frame == 0 or random.random() < 0.0005:
+                #     print(f"{state=}")
+                #     print(f"{accelerating_probabilities=}")
+                #     print(f"{direction_probabilities=}")
 
                 if random.random() < self.epsilon:
                     total_explore += 1
@@ -69,8 +73,10 @@ class BrainTrainer:
                     actions.append([accelerating, direction])
                 else:
                     total_exploit += 1
-                    direction = direction_probabilities.multinomial(1)
-                    accelerating = accelerating_probabilities.multinomial(1)
+                    # direction = direction_probabilities.multinomial(1)
+                    # accelerating = accelerating_probabilities.multinomial(1)
+                    direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                    accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
                     probabilities.append(
                         [
                             accelerating_probabilities[accelerating],
@@ -79,7 +85,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 2)
+                agent.action(accelerating.item(), direction.item() - 1)
 
             # update state
             goal_state = game.update()
@@ -98,8 +104,11 @@ class BrainTrainer:
             if frame + 1 == self.config["total_frames"]:
                 break
 
-            # if frame % 100 == 0:
-            #     self.update_network(actions[-50:], rewards[-50:], probabilities[-50:])
+            if frame % 100 == 0:
+                print(f"{frame=}")
+                self.update_network(
+                    actions[-100:], rewards[-100:], probabilities[-100:]
+                )
 
         print(f"{self.epsilon=:.2f}")
         print(f"{total_explore=}")
@@ -109,7 +118,7 @@ class BrainTrainer:
 
         pygame.quit()
 
-        self.update_network(actions, rewards, probabilities)
+        # self.update_network(actions, rewards, probabilities)
         self.epoch += 1
 
         print("finished training")
@@ -179,9 +188,9 @@ class BrainTrainer:
             closeness_to_wall_penalty -= 10
 
         reward = (
-            +distance_to_goal_reward
-            + distance_to_puck_reward
-            + direction_to_puck_reward
+            # +distance_to_goal_reward
+            +distance_to_puck_reward
+            # + direction_to_puck_reward
             + closeness_to_wall_penalty
         )
 
