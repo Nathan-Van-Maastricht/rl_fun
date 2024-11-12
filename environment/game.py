@@ -41,7 +41,7 @@ class Game:
             team=0,
             id=0,
             color=(255, 50, 50),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=0,
         )
         self.agents[1] = Agent(
             200 + (random.random() - 0.5) * 10,
@@ -50,7 +50,7 @@ class Game:
             team=0,
             id=1,
             color=(255, 50, 100),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=0,
         )
 
         self.agents[2] = Agent(
@@ -60,7 +60,7 @@ class Game:
             team=0,
             id=2,
             color=(255, 100, 50),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=0,
         )
 
         # Team 1
@@ -71,7 +71,7 @@ class Game:
             team=1,
             id=3,
             color=(50, 50, 255),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=math.pi,
         )
         self.agents[4] = Agent(
             600 + (random.random() - 0.5) * 10,
@@ -80,7 +80,7 @@ class Game:
             team=1,
             id=4,
             color=(100, 50, 255),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=math.pi,
         )
         self.agents[5] = Agent(
             600 + (random.random() - 0.5) * 10,
@@ -89,8 +89,13 @@ class Game:
             team=1,
             id=5,
             color=(50, 100, 255),
-            direction=random.random() * math.pi * 2 - math.pi,
+            direction=math.pi,
         )
+
+        for agent in self.agents.values():
+            agent.direction = self.direction_to_point(
+                agent.x, agent.y, self.puck.x, self.puck.y
+            )
 
     def distance_between_points(self, x0, y0, x1, y1):
         return ((x0 - x1) ** 2 + (y0 - y1) ** 2) ** 0.5
@@ -211,18 +216,17 @@ class Game:
             self.score[1] += 1
         elif goal_state == -1:
             self.score[0] += 1
-        self.agents = []
+        self.puck = Puck(
+            self.config["field"]["width"] / 2,
+            self.config["field"]["height"] / 2,
+            self.config,
+        )
         self.create_agents()
         # self.puck = Puck(
         #     self.config["field"]["width"] / 2 + random.gauss(0, 100),
         #     self.config["field"]["height"] / 2 + random.gauss(0, 30),
         #     self.config,
         # )
-        self.puck = Puck(
-            self.config["field"]["width"] / 2,
-            self.config["field"]["height"] / 2,
-            self.config,
-        )
 
         for agent in self.agents.values():
             agent.accelerating = True
