@@ -70,10 +70,10 @@ class Brain(nn.Module):
 
         accelerate = self.accelerate(vector)
         turn = self.turn(vector)
-        accelerate = torch.clamp(accelerate, min=0.1, max=0.9)
-        turn = torch.clamp(turn, min=0.0001, max=0.98)
+        # accelerate = torch.clamp(accelerate, min=0.1, max=0.9)
+        # turn = torch.clamp(turn, min=0.0001, max=0.98)
 
-        return torch.softmax(accelerate, dim=0), torch.softmax(turn, dim=0)
+        return accelerate, turn
 
     def save(self, path):
         torch.save(self.state_dict(), path)
