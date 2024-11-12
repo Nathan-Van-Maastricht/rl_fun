@@ -22,12 +22,16 @@ class Brain(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 5),
+            nn.Softmax(),
         )
 
     def forward(self, x):
-        return torch.softmax(self.accelerate(x) / 10, dim=0), torch.softmax(
-            self.turn(x) / 10, dim=0
-        )
+        accelerate = self.accelerate(x)
+        turn = self.turn(x)
+        accelerate = torch.clamp(accelerate, min=-10, max=10)
+        turn = torch.clamp(turn, min=0.00001, max=0.99)
+
+        return torch.softmax(accelerate, dim=0), torch.softmax(turn, dim=0)
 
     def save(self, path):
         torch.save(self.state_dict(), path)
