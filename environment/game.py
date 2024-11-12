@@ -145,8 +145,8 @@ class Game:
         self.agents = []
         self.create_agents()
         self.puck = Puck(
-            self.config["field"]["width"] / 2,
-            self.config["field"]["height"] / 2,
+            self.config["field"]["width"] / 2 + random.gauss(0, 100),
+            self.config["field"]["height"] / 2 + random.gauss(0, 30),
             self.config,
         )
 
