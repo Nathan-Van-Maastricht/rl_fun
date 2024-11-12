@@ -13,6 +13,7 @@ class Brain(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 2),
+            nn.Softmax(),
         )
         self.turn = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -28,7 +29,7 @@ class Brain(nn.Module):
     def forward(self, x):
         accelerate = self.accelerate(x)
         turn = self.turn(x)
-        accelerate = torch.clamp(accelerate, min=-10, max=10)
+        accelerate = torch.clamp(accelerate, min=0.1, max=0.9)
         turn = torch.clamp(turn, min=0.00001, max=0.99)
 
         return torch.softmax(accelerate, dim=0), torch.softmax(turn, dim=0)
