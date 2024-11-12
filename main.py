@@ -11,7 +11,7 @@ def main():
 
 
 def train():
-    brain = Brain(16, 128)
+    brain = Brain(14, 128)
     config = Config("config.json")
     trainer = BrainTrainer(brain, config)
     for epoch in range(1000):
