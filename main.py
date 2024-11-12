@@ -11,14 +11,15 @@ def main():
 
 
 def train():
-    brain = Brain(16, 64)
+    brain = Brain(16, 128)
     config = Config("config.json")
     trainer = BrainTrainer(brain, config)
     for epoch in range(1000):
         print(f"Starting epoch {epoch}")
         trainer.train_episode()
-
-        brain.save(f"weights/{epoch}.pth")
+        trainer.decay_epsilon()
+        if epoch % 10 == 0:
+            brain.save(f"weights/{epoch}.pth")
 
 
 if __name__ == "__main__":
