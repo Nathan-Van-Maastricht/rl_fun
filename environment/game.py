@@ -116,36 +116,36 @@ class Game:
         # enemy 3 position (x, y) 2
         # in_dim 16
 
-        # observation = []
-        # # puck position
-        # observation.append(self.puck.x)
-        # observation.append(self.puck.y)
+        observation = []
+        # puck position
+        observation.append(self.puck.x)
+        observation.append(self.puck.y)
 
-        # # own position
-        # observation.append(self.agents[agent_id].x)
-        # observation.append(self.agents[agent_id].y)
+        # own position
+        observation.append(agent.x)
+        observation.append(agent.y)
 
-        # # is_accelerating
-        # observation.append(self.agents[agent_id].accelerating)
+        # is_accelerating
+        observation.append(agent.accelerating)
 
-        # # direction
-        # observation.append(self.agents[agent_id].direction)
+        # direction
+        observation.append(agent.direction)
 
-        # # team and enemy lists
-        # team_mates = []
-        # enemy = []
-        # for agent in self.agents.values():
-        #     if agent.id == agent_id:
-        #         continue
+        # team and enemy lists
+        team_mates = []
+        enemy = []
+        for other_agent in self.agents.values():
+            if other_agent.id == agent.id:
+                continue
 
-        #     if agent.team == self.agents[agent_id].team:
-        #         team_mates.append(agent.x)
-        #         team_mates.append(agent.y)
-        #     else:
-        #         enemy.append(agent.x)
-        #         enemy.append(agent.y)
-        # observation.extend(team_mates)
-        # observation.extend(enemy)
+            if other_agent.team == agent.team:
+                team_mates.append(other_agent.x)
+                team_mates.append(other_agent.y)
+            else:
+                enemy.append(other_agent.x)
+                enemy.append(other_agent.y)
+        observation.extend(team_mates)
+        observation.extend(enemy)
 
         # obs2
         # direction to puck 1
@@ -164,50 +164,50 @@ class Game:
         # distance to enemy 3 1
         # in dim 14
 
-        observation = []
+        # observation = []
 
-        observation.append(
-            self.direction_to_point(agent.x, agent.y, self.puck.x, self.puck.y)
-        )
+        # observation.append(
+        #     self.direction_to_point(agent.x, agent.y, self.puck.x, self.puck.y)
+        # )
 
-        observation.append(
-            self.distance_between_points(agent.x, agent.y, self.puck.x, self.puck.y)
-        )
-        observation.append(agent.accelerating)
-        observation.append(agent.direction)
+        # observation.append(
+        #     self.distance_between_points(agent.x, agent.y, self.puck.x, self.puck.y)
+        # )
+        # observation.append(agent.accelerating)
+        # observation.append(agent.direction)
 
-        # # team and enemy lists
-        team_mates = []
-        enemy = []
-        for other_agent in self.agents.values():
-            if other_agent.id == agent.id:
-                continue
+        # # # team and enemy lists
+        # team_mates = []
+        # enemy = []
+        # for other_agent in self.agents.values():
+        #     if other_agent.id == agent.id:
+        #         continue
 
-            if other_agent.team == agent.team:
-                team_mates.append(
-                    self.direction_to_point(
-                        agent.x, agent.y, other_agent.x, other_agent.y
-                    )
-                )
-                team_mates.append(
-                    self.distance_between_points(
-                        agent.x, agent.y, other_agent.x, other_agent.y
-                    )
-                )
-            else:
-                enemy.append(
-                    self.direction_to_point(
-                        agent.x, agent.y, other_agent.x, other_agent.y
-                    )
-                )
-                enemy.append(
-                    self.distance_between_points(
-                        agent.x, agent.y, other_agent.x, other_agent.y
-                    )
-                )
+        #     if other_agent.team == agent.team:
+        #         team_mates.append(
+        #             self.direction_to_point(
+        #                 agent.x, agent.y, other_agent.x, other_agent.y
+        #             )
+        #         )
+        #         team_mates.append(
+        #             self.distance_between_points(
+        #                 agent.x, agent.y, other_agent.x, other_agent.y
+        #             )
+        #         )
+        #     else:
+        #         enemy.append(
+        #             self.direction_to_point(
+        #                 agent.x, agent.y, other_agent.x, other_agent.y
+        #             )
+        #         )
+        #         enemy.append(
+        #             self.distance_between_points(
+        #                 agent.x, agent.y, other_agent.x, other_agent.y
+        #             )
+        #         )
 
-        observation.extend(team_mates)
-        observation.extend(enemy)
+        # observation.extend(team_mates)
+        # observation.extend(enemy)
 
         return observation
 
