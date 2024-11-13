@@ -147,11 +147,14 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            # if frame % 125 == 0 and self.config["learn"]:
-            #     print(f"{frame=}")
-            #     self.update_network(
-            #         actions[-125:], rewards[-125:], probabilities[-125:]
-            #     )
+            if frame % 125 == 0 and self.config["learn"]:
+                print(f"{frame=}")
+                self.update_network(
+                    actions[-125:],
+                    rewards[-125:],
+                    probabilities[-125:],
+                    value_estimate[-125:],
+                )
 
             if frame == self.config["total_frames"]:
                 break
@@ -164,8 +167,9 @@ class BrainTrainer:
 
         pygame.quit()
 
-        if self.config["learn"]:
-            self.update_network(actions, rewards, probabilities, values)
+        # if self.config["learn"]:
+        #     self.update_network(actions, rewards, probabilities, values)
+
         self.epoch += 1
 
         print("finished training")
@@ -178,12 +182,12 @@ class BrainTrainer:
         probabilities = torch.Tensor(probabilities).transpose(0, 1).to(self.device)
 
         # normalise rewards
-        rewards = torch.Tensor(rewards).to(self.device)
-        min_val = rewards.min()
-        max_val = rewards.max()
-        rewards = (rewards - min_val) / (max_val - min_val)
+        # rewards = torch.Tensor(rewards).to(self.device)
+        # min_val = rewards.min()
+        # max_val = rewards.max()
+        # rewards = (rewards - min_val) / (max_val - min_val)
 
-        # returns = self.calculate_returns(rewards)
+        rewards = torch.Tensor(self.calculate_returns(rewards)).to(self.device)
 
         advantage = rewards - values
 
@@ -271,7 +275,7 @@ class BrainTrainer:
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
-            + direction_to_puck_reward
+            # + direction_to_puck_reward
             + closeness_to_wall_penalty
         )
 
