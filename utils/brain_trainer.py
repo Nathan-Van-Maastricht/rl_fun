@@ -40,13 +40,35 @@ class BrainTrainer:
         while True:
             for agent in game.agents.values():
                 # observe
-                state = torch.FloatTensor(game.get_observation(agent)).to(self.device)
-                state_min = torch.min(state)
-                state_max = torch.max(state)
-                state = (state - state_min) / (state_max - state_min)
+                status, distances, positional = game.get_observation(agent)
+
+                # normalise status
+                status[1] = (status[1] + math.pi) / (2 * math.pi)
+                status = torch.FloatTensor(status).to(self.device)
+
+                # normalise distances
+                distances = torch.FloatTensor(distances).to(self.device)
+                distances_min = torch.min(distances)
+                distances_max = torch.max(distances)
+                distances = (distances - distances_min) / (
+                    distances_max - distances_min
+                )
+
+                # normalise position
+                positional = torch.FloatTensor(positional).to(self.device)
+                positional_min = torch.min(positional)
+                positional_max = torch.max(positional)
+                positional = (positional - positional_min) / (
+                    positional_max - positional_min
+                )
+
+                # recreate state
+                # state = torch.cat((status, distances, positional))
 
                 # act
-                accelerating_probabilities, direction_probabilities = self.agent(state)
+                accelerating_probabilities, direction_probabilities = self.agent(
+                    status, distances, positional
+                )
                 # if frame == 0 or random.random() < 0.0005:
                 #     print(f"{state=}")
                 #     print(f"{accelerating_probabilities=}")
@@ -104,7 +126,7 @@ class BrainTrainer:
             if frame + 1 == self.config["total_frames"]:
                 break
 
-            if frame % 100 == 0:
+            if frame % 100 == 0 and self.config["learn"]:
                 print(f"{frame=}")
                 self.update_network(
                     actions[-100:], rewards[-100:], probabilities[-100:]
@@ -118,19 +140,24 @@ class BrainTrainer:
 
         pygame.quit()
 
-        # self.update_network(actions, rewards, probabilities)
+        # if self.config["learn"]:
+        #     self.update_network(actions, rewards, probabilities)
         self.epoch += 1
 
         print("finished training")
         print(f"Score: {game.score}")
 
     def update_network(self, actions, rewards, probabilities):
+        print(f"{self.epoch}: Updating network")
+
+        # normalise rewards
         rewards = torch.Tensor(rewards)
         min_val = rewards.min()
         max_val = rewards.max()
         rewards = (rewards - min_val) / (max_val - min_val)
-        print(f"{self.epoch}: Updating network")
+
         returns = self.calculate_returns(rewards)
+
         policy_loss = 0
 
         log_probabilities = 0
@@ -189,9 +216,9 @@ class BrainTrainer:
 
         reward = (
             # +distance_to_goal_reward
-            +distance_to_puck_reward
+            # + distance_to_puck_reward
             # + direction_to_puck_reward
-            + closeness_to_wall_penalty
+            +closeness_to_wall_penalty
         )
 
         # print(f"Agent: {agent.id}, reward: {reward}")

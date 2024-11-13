@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 
@@ -5,15 +7,19 @@ import torch.nn as nn
 class Embedding(nn.Module):
     def __init__(self, input_size, embedding_size):
         super(Embedding, self).__init__()
-        # self.embedding = nn.ReLU(nn.Linear(input_size, embedding_size))
-        self.embedding = nn.Sequential(
-            nn.Linear(input_size, embedding_size),
-            nn.ReLU(),
-            nn.Linear(embedding_size, embedding_size),
+        # self.embedding = nn.Sequential(
+        #     nn.Linear(input_size, embedding_size),
+        #     nn.ReLU(),
+        #     nn.Linear(embedding_size, embedding_size),
+        # )
+        self.embedding = nn.Parameter(torch.FloatTensor(input_size, embedding_size))
+        self.embedding.data.uniform_(
+            -(1.0 / math.sqrt(embedding_size)), 1.0 / math.sqrt(embedding_size)
         )
 
     def forward(self, input):
-        return self.embedding(input)
+        # return self.embedding(input)
+        return torch.matmul(input.float().unsqueeze(0), self.embedding).squeeze(0)
 
 
 class Brain(nn.Module):
@@ -43,23 +49,24 @@ class Brain(nn.Module):
 
         self.embedding = Embedding(2, 64)
 
-    def forward(self, x):
-        puck_pos = self.embedding(x[0:2])
-        self_pos = self.embedding(x[2:4])
-        is_accelerating = torch.tensor(x[4]).unsqueeze(0)
-        direction = torch.tensor(x[5]).unsqueeze(0)
-        team_1_pos = self.embedding(x[6:8])
-        team_2_pos = self.embedding(x[8:10])
-        enemy_1_pos = self.embedding(x[10:12])
-        enemy_2_pos = self.embedding(x[12:14])
-        enemy_3_pos = self.embedding(x[14:16])
+    def forward(self, status, distances, positions):
+        puck_pos = self.embedding(positions[0:2])
+        self_pos = self.embedding(positions[2:4])
+        team_1_pos = self.embedding(positions[4:6])
+        team_2_pos = self.embedding(positions[6:8])
+        enemy_1_pos = self.embedding(positions[8:10])
+        enemy_2_pos = self.embedding(positions[10:12])
+        enemy_3_pos = self.embedding(positions[12:14])
+
+        if torch.any(puck_pos == 0):
+            print(f"{puck_pos=}")
 
         vector = torch.cat(
             (
+                status,
+                distances,
                 puck_pos,
                 self_pos,
-                is_accelerating,
-                direction,
                 team_1_pos,
                 team_2_pos,
                 enemy_1_pos,
