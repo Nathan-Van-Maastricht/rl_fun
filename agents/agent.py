@@ -90,15 +90,15 @@ class Agent:
             self.speed_y += math.sin(self.direction)
         else:
             # Slow down when not accelerating
-            # speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
-            # if speed < 0.25:  # Stop when speed is negligible
-            #     self.speed_x = 0
-            #     self.speed_y = 0
-            # elif speed > 0:
-            #     self.speed_x *= self.config["friction"]  # Friction factor
-            #     self.speed_y *= self.config["friction"]
-            self.speed_x = 0
-            self.speed_y = 0
+            speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
+            if speed < 0.25:  # Stop when speed is negligible
+                self.speed_x = 0
+                self.speed_y = 0
+            elif speed > 0:
+                self.speed_x *= self.config["friction"]  # Friction factor
+                self.speed_y *= self.config["friction"]
+            # self.speed_x = 0
+            # self.speed_y = 0
 
         # Agent-agent collision detection
         for other_agent in agents.values():
