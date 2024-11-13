@@ -196,6 +196,9 @@ class BrainTrainer:
         actor_loss = reinforce.mean()
         critic_loss = advantage.pow(2).mean()
 
+        print(f"{actor_loss=}")
+        print(f"{critic_loss=}")
+
         self.agent_optimiser.zero_grad()
         self.critic_optimsier.zero_grad()
         (actor_loss + critic_loss).backward()
