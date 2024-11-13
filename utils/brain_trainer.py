@@ -43,6 +43,7 @@ class BrainTrainer:
         total_exploit = 0
 
         while True:
+            pygame.event.get()
             for agent in game.agents.values():
                 # observe
                 status, distances, positional = game.get_observation(agent)
@@ -99,10 +100,14 @@ class BrainTrainer:
                     actions.append([accelerating, direction])
                 else:
                     total_exploit += 1
-                    # direction = direction_probabilities.multinomial(1)
-                    # accelerating = accelerating_probabilities.multinomial(1)
-                    direction = torch.argmax(direction_probabilities).unsqueeze(0)
-                    accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
+                    # if not self.config["learn"]:
+                    direction = direction_probabilities.multinomial(1)
+                    accelerating = accelerating_probabilities.multinomial(1)
+                    # else:
+                    #     direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                    #     accelerating = torch.argmax(
+                    #         accelerating_probabilities
+                    #     ).unsqueeze(0)
                     probabilities.append(
                         [
                             accelerating_probabilities[accelerating],
@@ -111,7 +116,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 1)
+                agent.action(accelerating.item(), direction.item() - 179)
 
             # update state
             goal_state = game.update()
@@ -127,14 +132,14 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            if frame + 1 == self.config["total_frames"]:
-                break
-
-            if frame % 100 == 0 and self.config["learn"]:
+            if frame % 125 == 0 and self.config["learn"]:
                 print(f"{frame=}")
                 self.update_network(
-                    actions[-100:], rewards[-100:], probabilities[-100:]
+                    actions[-125:], rewards[-125:], probabilities[-125:]
                 )
+
+            if frame == self.config["total_frames"]:
+                break
 
         print(f"{self.epsilon=:.2f}")
         print(f"{total_explore=}")
@@ -226,10 +231,10 @@ class BrainTrainer:
         closeness_to_wall_penalty = -25 * math.exp(-min_distance / 50)
 
         reward = (
-            +distance_to_goal_reward
-            + distance_to_puck_reward
-            # + direction_to_puck_reward
-            + closeness_to_wall_penalty
+            # +distance_to_goal_reward
+            +distance_to_puck_reward
+            # +direction_to_puck_reward
+            # + closeness_to_wall_penalty
         )
 
         # print(f"Agent: {agent.id}, reward: {reward}")
@@ -240,7 +245,7 @@ class BrainTrainer:
         returns = []
         culmulative_reward = 0
         for reward in reversed(rewards):
-            returns.append(reward + 0.98 * culmulative_reward)
+            returns.append(reward + 0.99 * culmulative_reward)
 
         return list(reversed(returns))
 
