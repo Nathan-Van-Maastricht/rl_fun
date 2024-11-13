@@ -11,11 +11,11 @@ def main():
 
 
 def train():
-    brain = Brain(450, 128)
-    # brain.load("weights/45.pth")
+    brain = Brain(456, 128)
+    # brain.load("weights/50.pth")
     config = Config("config.json")
     trainer = BrainTrainer(brain, config)
-    for epoch in range(1000):
+    for epoch in range(51):
         print(f"Starting epoch {epoch}")
         trainer.train_episode()
         trainer.decay_epsilon()
