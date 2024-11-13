@@ -14,7 +14,7 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.001, weight_decay=1e-5
+            self.agent.parameters(), lr=0.0001, weight_decay=1e-4
         )
 
         self.epoch = 0
@@ -117,7 +117,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 90)
+                agent.action(accelerating.item(), direction.item() - 45)
 
             # update state
             goal_state = game.update()
@@ -133,11 +133,11 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            if frame % 125 == 0 and self.config["learn"]:
-                print(f"{frame=}")
-                self.update_network(
-                    actions[-125:], rewards[-125:], probabilities[-125:]
-                )
+            # if frame % 125 == 0 and self.config["learn"]:
+            #     print(f"{frame=}")
+            #     self.update_network(
+            #         actions[-125:], rewards[-125:], probabilities[-125:]
+            #     )
 
             if frame == self.config["total_frames"]:
                 break
@@ -150,8 +150,8 @@ class BrainTrainer:
 
         pygame.quit()
 
-        # if self.config["learn"]:
-        #     self.update_network(actions, rewards, probabilities)
+        if self.config["learn"]:
+            self.update_network(actions, rewards, probabilities)
         self.epoch += 1
 
         print("finished training")
@@ -203,12 +203,12 @@ class BrainTrainer:
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = -4 * math.log(distance_to_puck)
+        distance_to_puck_reward = 20 * math.exp(-distance_to_puck / 300) - 10
         if (
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
         ):
-            distance_to_puck_reward += 50
+            distance_to_puck_reward += 100
 
         angle_to_puck = math.atan2(puck.y - agent.y, puck.x - agent.x)
         angle_difference = math.acos(math.cos(angle_to_puck - agent.direction))
@@ -234,7 +234,7 @@ class BrainTrainer:
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
-            # +direction_to_puck_reward
+            + direction_to_puck_reward
             + closeness_to_wall_penalty
         )
 
