@@ -43,7 +43,8 @@ class BrainTrainer:
         total_exploit = 0
 
         while True:
-            pygame.event.get()
+            if self.config["visualise"]:
+                pygame.event.get()
             for agent in game.agents.values():
                 # observe
                 status, distances, positional = game.get_observation(agent)
@@ -116,7 +117,7 @@ class BrainTrainer:
                     )
                     actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 179)
+                agent.action(accelerating.item(), direction.item() - 90)
 
             # update state
             goal_state = game.update()
@@ -231,10 +232,10 @@ class BrainTrainer:
         closeness_to_wall_penalty = -25 * math.exp(-min_distance / 50)
 
         reward = (
-            # +distance_to_goal_reward
-            +distance_to_puck_reward
+            +distance_to_goal_reward
+            + distance_to_puck_reward
             # +direction_to_puck_reward
-            # + closeness_to_wall_penalty
+            + closeness_to_wall_penalty
         )
 
         # print(f"Agent: {agent.id}, reward: {reward}")
