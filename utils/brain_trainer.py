@@ -14,19 +14,19 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.0001, weight_decay=1e-4
+            self.agent.parameters(), lr=0.001, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=0.0001, weight_decay=1e-4
+            self.critic.parameters(), lr=0.001, weight_decay=1e-4
         )
 
         self.epoch = 0
         if self.config["learn"]:
             self.epsilon = self.config["default_epsilon"]
             self.epsilon_min = 0.1
-            self.epsilon_decay = 0.006125
+            self.epsilon_decay = 1e-4
         else:
             self.epsilon = 0
             self.epsilon_min = 0
@@ -254,7 +254,7 @@ class BrainTrainer:
         angle_to_puck = math.atan2(puck.y - agent.y, puck.x - agent.x)
         angle_difference = math.acos(math.cos(angle_to_puck - agent.direction))
 
-        direction_to_puck_reward = -10 * angle_difference
+        direction_to_puck_reward = -angle_difference
 
         distance_to_left_wall = agent.x
         distance_to_right_wall = self.config["field"]["width"] - agent.x
@@ -275,7 +275,7 @@ class BrainTrainer:
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
-            # + direction_to_puck_reward
+            + direction_to_puck_reward
             + closeness_to_wall_penalty
         )
 
