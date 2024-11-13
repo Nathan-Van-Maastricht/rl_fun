@@ -18,7 +18,7 @@ class BrainTrainer:
         )
 
         self.epoch = 0
-        self.epsilon = 0.5
+        self.epsilon = 0.25
         self.epsilon_decay = 0.00625
         self.epsilon_min = 0.1
 
@@ -69,8 +69,7 @@ class BrainTrainer:
                 accelerating_probabilities, direction_probabilities = self.agent(
                     status, distances, positional
                 )
-                # if frame == 0 or random.random() < 0.0005:
-                #     print(f"{state=}")
+                # if frame == 0 or random.random() < 0.05:
                 #     print(f"{accelerating_probabilities=}")
                 #     print(f"{direction_probabilities=}")
 
@@ -165,8 +164,11 @@ class BrainTrainer:
             probabilities, actions, returns
         ):
             log_probabilities = torch.log(action_probabilities[1])
-            policy_loss -= log_probabilities * reward
+            if log_probabilities > -1000:
+                policy_loss -= log_probabilities * reward
             log_probabilities = torch.log(action_probabilities[0])
+            if log_probabilities > -1000:
+                policy_loss -= log_probabilities * reward
             policy_loss -= log_probabilities * reward
 
         print(f"{policy_loss=}")
@@ -195,30 +197,34 @@ class BrainTrainer:
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
         ):
-            distance_to_puck_reward += 25
+            distance_to_puck_reward += 50
 
         angle_to_puck = math.atan2(puck.y - agent.y, puck.x - agent.x)
         angle_difference = math.acos(math.cos(angle_to_puck - agent.direction))
 
         direction_to_puck_reward = -10 * angle_difference
 
-        closeness_to_wall_penalty = 0
-        if (agent.x < (50 + self.config["puck"]["radius"])) or (
-            agent.x
-            > self.config["field"]["width"] - (50 + self.config["puck"]["radius"])
-        ):
-            closeness_to_wall_penalty -= 10
-        if (agent.y < (50 + self.config["puck"]["radius"])) or (
-            agent.y
-            > self.config["field"]["height"] - (50 + self.config["puck"]["radius"])
-        ):
-            closeness_to_wall_penalty -= 10
+        distance_to_left_wall = agent.x
+        distance_to_right_wall = self.config["field"]["width"] - agent.x
+        distance_to_top = agent.y
+        distance_to_bottom = self.config["field"]["height"] - agent.y
+
+        min_distance = min(
+            [
+                distance_to_left_wall,
+                distance_to_right_wall,
+                distance_to_top,
+                distance_to_bottom,
+            ]
+        )
+
+        closeness_to_wall_penalty = -25 * math.exp(-min_distance / 50)
 
         reward = (
-            # +distance_to_goal_reward
-            # + distance_to_puck_reward
+            +distance_to_goal_reward
+            + distance_to_puck_reward
             # + direction_to_puck_reward
-            +closeness_to_wall_penalty
+            + closeness_to_wall_penalty
         )
 
         # print(f"Agent: {agent.id}, reward: {reward}")
