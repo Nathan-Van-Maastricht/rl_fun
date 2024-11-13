@@ -175,10 +175,10 @@ class BrainTrainer:
         print(f"{self.epoch}: Updating network")
 
         values = torch.cat(values)
-        probabilities = torch.Tensor(probabilities).transpose(0, 1)
+        probabilities = torch.Tensor(probabilities).transpose(0, 1).to(self.device)
 
         # normalise rewards
-        rewards = torch.Tensor(rewards)
+        rewards = torch.Tensor(rewards).to(self.device)
         min_val = rewards.min()
         max_val = rewards.max()
         rewards = (rewards - min_val) / (max_val - min_val)
@@ -187,7 +187,7 @@ class BrainTrainer:
 
         advantage = rewards - values
 
-        log_probabilities = 0
+        log_probabilities = torch.zeros(probabilities.shape[1]).to(self.device)
         for action_probability in probabilities:
             log_probabilities += torch.log(action_probability)
         log_probabilities[log_probabilities < -1000] = 0.0
