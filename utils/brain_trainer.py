@@ -18,9 +18,14 @@ class BrainTrainer:
         )
 
         self.epoch = 0
-        self.epsilon = 0.25
-        self.epsilon_decay = 0.00625
-        self.epsilon_min = 0.1
+        if self.config["learn"]:
+            self.epsilon = self.config["default_epsilon"]
+            self.epsilon_min = 0.1
+            self.epsilon_decay = 0.006125
+        else:
+            self.epsilon = 0
+            self.epsilon_min = 0
+            self.epsilon_decay = 0
 
     def decay_epsilon(self):
         self.epsilon = max(self.epsilon - self.epsilon_decay, self.epsilon_min)
