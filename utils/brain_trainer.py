@@ -153,7 +153,7 @@ class BrainTrainer:
                     actions[-125:],
                     rewards[-125:],
                     probabilities[-125:],
-                    value_estimate[-125:],
+                    values[-125:],
                 )
 
             if frame == self.config["total_frames"]:
