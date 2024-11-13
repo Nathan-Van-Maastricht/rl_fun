@@ -9,12 +9,17 @@ from environment.game import Game
 
 
 class BrainTrainer:
-    def __init__(self, agent, config):
+    def __init__(self, agent, config, critic):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
             self.agent.parameters(), lr=0.0001, weight_decay=1e-4
+        )
+
+        self.critic = critic.to(self.device)
+        self.critic_optimsier = optim.AdamW(
+            self.critic.parameters(), lr=0.0001, weight_decay=1e-4
         )
 
         self.epoch = 0
@@ -30,12 +35,32 @@ class BrainTrainer:
     def decay_epsilon(self):
         self.epsilon = max(self.epsilon - self.epsilon_decay, self.epsilon_min)
 
+    def normalise_observation(self, status, distances, positional):
+        # normalise status
+        status[1] = (status[1] + math.pi) / (2 * math.pi)
+        status = torch.FloatTensor(status).to(self.device)
+
+        # normalise distances
+        distances = torch.FloatTensor(distances).to(self.device)
+        distances_min = torch.min(distances)
+        distances_max = torch.max(distances)
+        distances = (distances - distances_min) / (distances_max - distances_min)
+
+        # normalise position
+        positional = torch.FloatTensor(positional).to(self.device)
+        positional_min = torch.min(positional)
+        positional_max = torch.max(positional)
+        positional = (positional - positional_min) / (positional_max - positional_min)
+
+        return status, distances, positional
+
     def train_episode(self):
         game = Game(self.config)
 
         actions = []
         rewards = []
         probabilities = []
+        values = []
 
         frame = 0
 
@@ -48,25 +73,8 @@ class BrainTrainer:
             for agent in game.agents.values():
                 # observe
                 status, distances, positional = game.get_observation(agent)
-
-                # normalise status
-                status[1] = (status[1] + math.pi) / (2 * math.pi)
-                status = torch.FloatTensor(status).to(self.device)
-
-                # normalise distances
-                distances = torch.FloatTensor(distances).to(self.device)
-                distances_min = torch.min(distances)
-                distances_max = torch.max(distances)
-                distances = (distances - distances_min) / (
-                    distances_max - distances_min
-                )
-
-                # normalise position
-                positional = torch.FloatTensor(positional).to(self.device)
-                positional_min = torch.min(positional)
-                positional_max = torch.max(positional)
-                positional = (positional - positional_min) / (
-                    positional_max - positional_min
+                status, distances, positional = self.normalise_observation(
+                    status, distances, positional
                 )
 
                 # recreate state
@@ -126,6 +134,12 @@ class BrainTrainer:
             for agent in game.agents.values():
                 rewards.append(self.reward(game.puck, goal_state, agent))
                 agent.reward = rewards[-1]
+                status, distances, positional = game.get_observation(agent)
+                status, distances, positional = self.normalise_observation(
+                    status, distances, positional
+                )
+                value_estimate = self.critic(status, distances, positional)
+                values.append(value_estimate)
 
             if self.config["visualise"]:
                 game.draw()
@@ -151,14 +165,17 @@ class BrainTrainer:
         pygame.quit()
 
         if self.config["learn"]:
-            self.update_network(actions, rewards, probabilities)
+            self.update_network(actions, rewards, probabilities, values)
         self.epoch += 1
 
         print("finished training")
         print(f"Score: {game.score}")
 
-    def update_network(self, actions, rewards, probabilities):
+    def update_network(self, actions, rewards, probabilities, values):
         print(f"{self.epoch}: Updating network")
+
+        values = torch.cat(values)
+        probabilities = torch.Tensor(probabilities).transpose(0, 1)
 
         # normalise rewards
         rewards = torch.Tensor(rewards)
@@ -166,28 +183,45 @@ class BrainTrainer:
         max_val = rewards.max()
         rewards = (rewards - min_val) / (max_val - min_val)
 
-        returns = self.calculate_returns(rewards)
+        # returns = self.calculate_returns(rewards)
 
-        policy_loss = 0
+        advantage = rewards - values
 
         log_probabilities = 0
-        for action_probabilities, action, reward in zip(
-            probabilities, actions, returns
-        ):
-            log_probabilities = torch.log(action_probabilities[1])
-            if log_probabilities > -1000:
-                policy_loss -= log_probabilities * reward
-            log_probabilities = torch.log(action_probabilities[0])
-            if log_probabilities > -1000:
-                policy_loss -= log_probabilities * reward
-            policy_loss -= log_probabilities * reward
+        for action_probability in probabilities:
+            log_probabilities += torch.log(action_probability)
+        log_probabilities[log_probabilities < -1000] = 0.0
 
-        print(f"{policy_loss=}")
+        reinforce = advantage * log_probabilities
+        actor_loss = reinforce.mean()
+        critic_loss = advantage.pow(2).mean()
 
         self.agent_optimiser.zero_grad()
-        policy_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 1.0, norm_type=2)
+        self.critic_optimsier.zero_grad()
+        (actor_loss + critic_loss).backward()
         self.agent_optimiser.step()
+        self.critic_optimsier.step()
+
+        # policy_loss = 0
+
+        # log_probabilities = 0
+        # for action_probabilities, action, reward in zip(
+        #     probabilities, actions, returns
+        # ):
+        #     log_probabilities = torch.log(action_probabilities[1])
+        #     if log_probabilities > -1000:
+        #         policy_loss -= log_probabilities * reward
+        #     log_probabilities = torch.log(action_probabilities[0])
+        #     if log_probabilities > -1000:
+        #         policy_loss -= log_probabilities * reward
+        #     policy_loss -= log_probabilities * reward
+
+        # print(f"{policy_loss=}")
+
+        # self.agent_optimiser.zero_grad()
+        # policy_loss.backward()
+        # torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 1.0, norm_type=2)
+        # self.agent_optimiser.step()
 
     def reward(self, puck, goal_state, agent):
         if agent.team == 0:

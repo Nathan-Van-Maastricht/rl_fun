@@ -1,4 +1,4 @@
-from agents.brain import Brain
+from agents.brain import Brain, BrainValue
 from environment.game import Game
 from utils.brain_trainer import BrainTrainer
 from utils.config import Config
@@ -12,9 +12,10 @@ def main():
 
 def train():
     brain = Brain(456, 128)
-    brain.load("weights/0105.pth")
+    critic = BrainValue(456, 128)
+    # brain.load("weights/0105.pth")
     config = Config("config.json")
-    trainer = BrainTrainer(brain, config)
+    trainer = BrainTrainer(brain, config, critic)
     for epoch in range(0, 9996):
         print(f"Starting epoch {epoch}")
         trainer.train_episode()
