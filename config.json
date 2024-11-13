@@ -1,11 +1,11 @@
 {
-    "total_frames": 1000,
-    "visualise": true,
-    "max_fps": 500,
+    "total_frames": 2500,
+    "visualise": false,
+    "max_fps": 1000,
     "tiebreak": true,
     "friction": 0.99,
-    "learn": false,
-    "default_epsilon": 0.25,
+    "learn": true,
+    "default_epsilon": 0.5,
     "field": {
         "width": 800,
         "height": 600,
