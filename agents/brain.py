@@ -100,5 +100,31 @@ class BrainValue(nn.Module):
             nn.Linear(hidden_dim, 1),
         )
 
-    def forward(self, x):
-        return self.main(x)
+        self.embedding = Embedding(2, 64)
+
+    def forward(self, status, distances, positions):
+        puck_pos = self.embedding(positions[0:2])
+        self_pos = self.embedding(positions[2:4])
+        team_1_pos = self.embedding(positions[4:6])
+        team_2_pos = self.embedding(positions[6:8])
+        enemy_1_pos = self.embedding(positions[8:10])
+        enemy_2_pos = self.embedding(positions[10:12])
+        enemy_3_pos = self.embedding(positions[12:14])
+
+        if torch.any(puck_pos == 0):
+            print(f"{puck_pos=}")
+
+        vector = torch.cat(
+            (
+                status,
+                distances,
+                puck_pos,
+                self_pos,
+                team_1_pos,
+                team_2_pos,
+                enemy_1_pos,
+                enemy_2_pos,
+                enemy_3_pos,
+            )
+        )
+        return self.main(vector)
