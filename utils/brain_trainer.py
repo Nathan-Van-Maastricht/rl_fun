@@ -130,7 +130,11 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            if frame % 125 == 0 and self.config["learn"]:
+            if (
+                self.config["mini_batch_size"] > 0
+                and self.config["learn"]
+                and frame % self.config["mini_batch_size"] == 0
+            ):
                 print(f"{frame=}")
                 self.update_network(
                     rewards,
@@ -159,8 +163,8 @@ class BrainTrainer:
         if self.config["visualise"]:
             pygame.quit()
 
-        # if self.config["learn"]:
-        #     self.update_network(rewards, probabilities, values)
+        if self.config["learn"] and self.config["mini_batch_size"] == 0:
+            self.update_network(rewards, probabilities, values)
 
         self.epoch += 1
 
@@ -206,14 +210,16 @@ class BrainTrainer:
     def reward(self, puck, goal_state, agent):
         if agent.team == 0:
             target_distance = puck.distance_to_goal(1)
-            own_distance = puck.distance_to_goal(0)
+            # own_distance = puck.distance_to_goal(0)
         else:
             target_distance = puck.distance_to_goal(0)
-            own_distance = puck.distance_to_goal(1)
+            # own_distance = puck.distance_to_goal(1)
 
-        distance_to_goal_reward = 100 * math.exp(
-            -target_distance / 100
-        ) - 100 * math.exp(-own_distance / 125)
+        # distance_to_goal_reward = 100 * math.exp(
+        #     -target_distance / 100
+        # ) - 100 * math.exp(-own_distance / 125)
+
+        distance_to_goal_reward = 15 * math.exp(-target_distance / 150)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
