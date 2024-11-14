@@ -14,19 +14,19 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=0.001, weight_decay=1e-4
+            self.agent.parameters(), lr=1e-4, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=0.001, weight_decay=1e-4
+            self.critic.parameters(), lr=1e-3, weight_decay=1e-4
         )
 
         self.epoch = 0
         if self.config["learn"]:
             self.epsilon = self.config["default_epsilon"]
             self.epsilon_min = 0.1
-            self.epsilon_decay = 1e-4
+            self.epsilon_decay = 1e-2
         else:
             self.epsilon = 0
             self.epsilon_min = 0
@@ -76,7 +76,8 @@ class BrainTrainer:
                 status, distances, positional = self.normalise_observation(
                     status, distances, positional
                 )
-
+                value_estimate = self.critic(status, distances, positional)
+                values.append(value_estimate)
                 # recreate state
                 # state = torch.cat((status, distances, positional))
 
@@ -100,13 +101,13 @@ class BrainTrainer:
                     direction = torch.argmin(direction_probabilities).unsqueeze(0)
                     accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
 
-                    probabilities.append(
-                        [
-                            accelerating_probabilities[accelerating],
-                            direction_probabilities[direction],
-                        ]
-                    )
-                    actions.append([accelerating, direction])
+                    # probabilities.append(
+                    #     [
+                    #         accelerating_probabilities[accelerating],
+                    #         direction_probabilities[direction],
+                    #     ]
+                    # )
+                    # actions.append([accelerating, direction])
                 else:
                     total_exploit += 1
                     # if not self.config["learn"]:
@@ -117,15 +118,22 @@ class BrainTrainer:
                     #     accelerating = torch.argmax(
                     #         accelerating_probabilities
                     #     ).unsqueeze(0)
-                    probabilities.append(
-                        [
-                            accelerating_probabilities[accelerating],
-                            direction_probabilities[direction],
-                        ]
-                    )
-                    actions.append([accelerating, direction])
+                    # probabilities.append(
+                    #     [
+                    #         accelerating_probabilities[accelerating],
+                    #         direction_probabilities[direction],
+                    #     ]
+                    # )
+                    # actions.append([accelerating, direction])
 
-                agent.action(accelerating.item(), direction.item() - 45)
+                agent.action(accelerating.item(), direction.item() - 20)
+                probabilities.append(
+                    [
+                        accelerating_probabilities[accelerating],
+                        direction_probabilities[direction],
+                    ]
+                )
+                actions.append([accelerating, direction])
 
             # update state
             goal_state = game.update()
@@ -134,12 +142,12 @@ class BrainTrainer:
             for agent in game.agents.values():
                 rewards.append(self.reward(game.puck, goal_state, agent))
                 agent.reward = rewards[-1]
-                status, distances, positional = game.get_observation(agent)
-                status, distances, positional = self.normalise_observation(
-                    status, distances, positional
-                )
-                value_estimate = self.critic(status, distances, positional)
-                values.append(value_estimate)
+                # status, distances, positional = game.get_observation(agent)
+                # status, distances, positional = self.normalise_observation(
+                #     status, distances, positional
+                # )
+                # value_estimate = self.critic(status, distances, positional)
+                # values.append(value_estimate)
 
             if self.config["visualise"]:
                 game.draw()
@@ -147,14 +155,14 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            if frame % 125 == 0 and self.config["learn"]:
-                print(f"{frame=}")
-                self.update_network(
-                    actions[-125:],
-                    rewards[-125:],
-                    probabilities[-125:],
-                    values[-125:],
-                )
+            # if frame % 125 == 0 and self.config["learn"]:
+            #     print(f"{frame=}")
+            #     self.update_network(
+            #         actions[-125:],
+            #         rewards[-125:],
+            #         probabilities[-125:],
+            #         values[-125:],
+            #     )
 
             if frame == self.config["total_frames"]:
                 break
@@ -165,10 +173,11 @@ class BrainTrainer:
         print(f"Explore ratio: {100*total_explore/(total_explore + total_exploit):.2f}")
         print(f"Exploit ratio: {100*total_exploit/(total_explore+total_exploit):.2f}")
 
-        pygame.quit()
+        if self.config["visualise"]:
+            pygame.quit()
 
-        # if self.config["learn"]:
-        #     self.update_network(actions, rewards, probabilities, values)
+        if self.config["learn"]:
+            self.update_network(actions, rewards, probabilities, values)
 
         self.epoch += 1
 
@@ -182,10 +191,10 @@ class BrainTrainer:
         probabilities = torch.Tensor(probabilities).transpose(0, 1).to(self.device)
 
         # normalise rewards
-        # rewards = torch.Tensor(rewards).to(self.device)
-        # min_val = rewards.min()
-        # max_val = rewards.max()
-        # rewards = (rewards - min_val) / (max_val - min_val)
+        rewards = torch.Tensor(rewards).to(self.device)
+        min_val = rewards.min()
+        max_val = rewards.max()
+        rewards = (rewards - min_val) / (max_val - min_val)
 
         rewards = torch.Tensor(self.calculate_returns(rewards)).to(self.device)
 
@@ -199,13 +208,17 @@ class BrainTrainer:
         reinforce = advantage * log_probabilities
         actor_loss = reinforce.mean()
         critic_loss = advantage.pow(2).mean()
+        total_loss = actor_loss + critic_loss + random.random() * 5
 
         print(f"{actor_loss=}")
         print(f"{critic_loss=}")
 
         self.agent_optimiser.zero_grad()
         self.critic_optimsier.zero_grad()
-        (actor_loss + critic_loss).backward()
+        # (actor_loss + critic_loss).backward()
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 2.0, norm_type=2)
+        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 2.0, norm_type=2)
         self.agent_optimiser.step()
         self.critic_optimsier.step()
 
@@ -275,7 +288,7 @@ class BrainTrainer:
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
-            + direction_to_puck_reward
+            # + direction_to_puck_reward
             + closeness_to_wall_penalty
         )
 
@@ -285,9 +298,10 @@ class BrainTrainer:
 
     def calculate_returns(self, rewards):
         returns = []
-        culmulative_reward = 0
+        cumulative_reward = 0
         for reward in reversed(rewards):
-            returns.append(reward + 0.99 * culmulative_reward)
+            returns.append(reward + 0.9 * cumulative_reward)
+            cumulative_reward = returns[-1]
 
         return list(reversed(returns))
 
