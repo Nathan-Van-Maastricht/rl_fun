@@ -145,6 +145,8 @@ class BrainTrainer:
         print(f"{total_exploit=}")
         print(f"Explore ratio: {100*total_explore/(total_explore + total_exploit):.2f}")
         print(f"Exploit ratio: {100*total_exploit/(total_explore+total_exploit):.2f}")
+        print("Game done")
+        print(f"Score: {game.score}")
 
         if self.config["visualise"]:
             pygame.quit()
@@ -155,7 +157,6 @@ class BrainTrainer:
         self.epoch += 1
 
         print("finished training")
-        print(f"Score: {game.score}")
 
     def update_network(self, rewards, probabilities, values):
         print(f"{self.epoch}: Updating network")
