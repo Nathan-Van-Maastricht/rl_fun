@@ -25,8 +25,8 @@ class BrainTrainer:
         self.epoch = 0
         if self.config["learn"]:
             self.epsilon = self.config["default_epsilon"]
-            self.epsilon_min = 0.1
-            self.epsilon_decay = 2e-3
+            self.epsilon_min = self.config["epsilon_min"]
+            self.epsilon_decay = self.config["epsilon_decay"]
         else:
             self.epsilon = 0
             self.epsilon_min = 0
@@ -210,20 +210,21 @@ class BrainTrainer:
     def reward(self, puck, goal_state, agent):
         if agent.team == 0:
             target_distance = puck.distance_to_goal(1)
-            # own_distance = puck.distance_to_goal(0)
+            own_distance = puck.distance_to_goal(0)
         else:
             target_distance = puck.distance_to_goal(0)
-            # own_distance = puck.distance_to_goal(1)
+            own_distance = puck.distance_to_goal(1)
 
         # distance_to_goal_reward = 100 * math.exp(
         #     -target_distance / 100
         # ) - 100 * math.exp(-own_distance / 125)
 
         distance_to_goal_reward = 15 * math.exp(-target_distance / 150)
+        distance_to_own_goal_penalty = -20 * math.exp(-own_distance / 150)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = 20 * math.exp(-distance_to_puck / 300) - 10
+        distance_to_puck_reward = 25 * math.exp(-distance_to_puck / 300) - 12
         if (
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
@@ -265,6 +266,7 @@ class BrainTrainer:
 
         reward = (
             +distance_to_goal_reward
+            + distance_to_own_goal_penalty
             + distance_to_puck_reward
             + direction_to_puck_reward
             + closeness_to_wall_penalty
