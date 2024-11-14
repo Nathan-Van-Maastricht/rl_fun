@@ -43,7 +43,7 @@ class Brain(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 91),
+            nn.Linear(hidden_dim, 41),
             nn.Softmax(),
         )
 
