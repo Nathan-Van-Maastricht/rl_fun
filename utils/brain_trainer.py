@@ -14,19 +14,19 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=1e-4, weight_decay=1e-4
+            self.agent.parameters(), lr=1e-5, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=1e-3, weight_decay=1e-4
+            self.critic.parameters(), lr=1e-4, weight_decay=1e-4
         )
 
         self.epoch = 0
         if self.config["learn"]:
             self.epsilon = self.config["default_epsilon"]
             self.epsilon_min = 0.1
-            self.epsilon_decay = 5e-2
+            self.epsilon_decay = 2e-3
         else:
             self.epsilon = 0
             self.epsilon_min = 0
@@ -55,10 +55,10 @@ class BrainTrainer:
         return status, distances, positional
 
     def train_episode(self):
-        print(f"{self.epsilon=:.2f}")
+        print(f"{self.epsilon=:.4f}")
         game = Game(self.config)
 
-        actions = []
+        # actions = []
         rewards = []
         probabilities = []
         values = []
@@ -87,16 +87,16 @@ class BrainTrainer:
 
                 if random.random() < self.epsilon:
                     total_explore += 1
-                    # direction = torch.randint(
-                    #     direction_probabilities.shape[0], (1,)
-                    # ).to(self.device)
+                    direction = torch.randint(
+                        direction_probabilities.shape[0], (1,)
+                    ).to(self.device)
 
-                    # accelerating = torch.randint(
-                    #     accelerating_probabilities.shape[0], (1,)
-                    # ).to(self.device)
+                    accelerating = torch.randint(
+                        accelerating_probabilities.shape[0], (1,)
+                    ).to(self.device)
 
-                    direction = torch.argmin(direction_probabilities).unsqueeze(0)
-                    accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
+                    # direction = torch.argmin(direction_probabilities).unsqueeze(0)
+                    # accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
                 else:
                     total_exploit += 1
 
@@ -114,7 +114,7 @@ class BrainTrainer:
                         direction_probabilities[direction],
                     ]
                 )
-                actions.append([accelerating, direction])
+                # actions.append([accelerating, direction])
 
             # update state
             goal_state = game.update()
@@ -130,13 +130,16 @@ class BrainTrainer:
             # input()
 
             frame += 1
-            # if frame % 125 == 0 and self.config["learn"]:
-            #     print(f"{frame=}")
-            #     self.update_network(
-            #         rewards[-125:],
-            #         probabilities[-125:],
-            #         values[-125:],
-            #     )
+            if frame % 125 == 0 and self.config["learn"]:
+                print(f"{frame=}")
+                self.update_network(
+                    rewards,
+                    probabilities,
+                    values,
+                )
+                rewards = []
+                probabilities = []
+                values = []
 
             if frame == self.config["total_frames"]:
                 break
@@ -156,12 +159,12 @@ class BrainTrainer:
         if self.config["visualise"]:
             pygame.quit()
 
-        if self.config["learn"]:
-            self.update_network(rewards, probabilities, values)
+        # if self.config["learn"]:
+        #     self.update_network(rewards, probabilities, values)
 
         self.epoch += 1
 
-        print("finished training")
+        print("finished training\n")
 
     def update_network(self, rewards, probabilities, values):
         print(f"{self.epoch}: Updating network")
@@ -219,7 +222,7 @@ class BrainTrainer:
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
         ):
-            distance_to_puck_reward += 100
+            distance_to_puck_reward += 50
 
         angle_to_puck = math.atan2(puck.y - agent.y, puck.x - agent.x)
         angle_difference = math.acos(math.cos(angle_to_puck - agent.direction))
@@ -257,7 +260,7 @@ class BrainTrainer:
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
-            # + direction_to_puck_reward
+            + direction_to_puck_reward
             + closeness_to_wall_penalty
             + goal_state_reward
         )
@@ -268,7 +271,7 @@ class BrainTrainer:
         returns = []
         cumulative_reward = 0
         for reward in reversed(rewards):
-            returns.append(reward + 0.9 * cumulative_reward)
+            returns.append(reward + 0.99 * cumulative_reward)
             cumulative_reward = returns[-1]
 
         return list(reversed(returns))
