@@ -147,12 +147,11 @@ class BrainTrainer:
         print(f"Exploit ratio: {100*total_exploit/(total_explore+total_exploit):.2f}")
         print("Game done")
         if game.score[0] > game.score[1]:
-            print(f"Score: \033[32m{game.score[0]} : \033[31m{game.score[1]}")
+            print(f"Score: \033[32m{game.score[0]} : \033[31m{game.score[1]}\033[0m")
         elif game.score[0] < game.score[1]:
-            print(f"Score: \033[31m{game.score[0]} : \033[32m{game.score[1]}")
+            print(f"Score: \033[31m{game.score[0]} : \033[32m{game.score[1]}\033[0m")
         else:
-            print(f"Score: \033[95m{game.score[0]} : {game.score[1]}")
-        print("\033[0m")
+            print(f"Score: \033[95m{game.score[0]} : {game.score[1]}\033[0m")
 
         if self.config["visualise"]:
             pygame.quit()
@@ -246,14 +245,14 @@ class BrainTrainer:
         goal_state_reward = 0
         if goal_state == 1:
             if agent.team == 0:
-                goal_state_reward = -50
+                goal_state_reward = -500
             else:
-                goal_state_reward = 50
+                goal_state_reward = 500
         elif goal_state == -1:
             if agent.team == 0:
-                goal_state_reward = 50
+                goal_state_reward = 500
             else:
-                goal_state_reward = -50
+                goal_state_reward = -500
 
         reward = (
             +distance_to_goal_reward
