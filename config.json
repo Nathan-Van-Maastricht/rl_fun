@@ -6,7 +6,7 @@
     "friction": 0.99,
     "learn": true,
     "default_epsilon": 0.5,
-    "min_batch_size": 50,
+    "mini_batch_size": 50,
     "field": {
         "width": 800,
         "height": 600,
