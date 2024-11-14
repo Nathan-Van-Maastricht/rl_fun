@@ -27,7 +27,7 @@ class Brain(nn.Module):
         super(Brain, self).__init__()
         self.accelerate = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            # nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
@@ -38,7 +38,7 @@ class Brain(nn.Module):
 
         self.turn = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            # nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
@@ -94,7 +94,7 @@ class BrainValue(nn.Module):
         super(BrainValue, self).__init__()
         self.main = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
+            # nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
@@ -128,3 +128,9 @@ class BrainValue(nn.Module):
             )
         )
         return self.main(vector)
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path))
