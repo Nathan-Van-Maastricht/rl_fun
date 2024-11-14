@@ -26,7 +26,7 @@ class BrainTrainer:
         if self.config["learn"]:
             self.epsilon = self.config["default_epsilon"]
             self.epsilon_min = 0.1
-            self.epsilon_decay = 1e-2
+            self.epsilon_decay = 5e-2
         else:
             self.epsilon = 0
             self.epsilon_min = 0
@@ -55,6 +55,7 @@ class BrainTrainer:
         return status, distances, positional
 
     def train_episode(self):
+        print(f"{self.epsilon=:.2f}")
         game = Game(self.config)
 
         actions = []
@@ -140,7 +141,6 @@ class BrainTrainer:
             if frame == self.config["total_frames"]:
                 break
 
-        print(f"{self.epsilon=:.2f}")
         print(f"{total_explore=}")
         print(f"{total_exploit=}")
         print(f"Explore ratio: {100*total_explore/(total_explore + total_exploit):.2f}")
