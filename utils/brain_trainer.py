@@ -219,7 +219,7 @@ class BrainTrainer:
         #     -target_distance / 100
         # ) - 100 * math.exp(-own_distance / 125)
 
-        distance_to_goal_reward = 15 * math.exp(-target_distance / 150)
+        distance_to_goal_reward = 25 * math.exp(-target_distance / 150)
         distance_to_own_goal_penalty = -20 * math.exp(-own_distance / 150)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
