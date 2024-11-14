@@ -5,7 +5,9 @@
     "tiebreak": true,
     "friction": 0.99,
     "learn": true,
-    "default_epsilon": 0.5,
+    "default_epsilon": 0.35,
+    "epsilon_decay": 1e-3,
+    "epsilon_min": 1e-1,
     "mini_batch_size": 50,
     "field": {
         "width": 800,
