@@ -78,16 +78,11 @@ class BrainTrainer:
                 )
                 value_estimate = self.critic(status, distances, positional)
                 values.append(value_estimate)
-                # recreate state
-                # state = torch.cat((status, distances, positional))
 
                 # act
                 accelerating_probabilities, direction_probabilities = self.agent(
                     status, distances, positional
                 )
-                # if frame == 0 or random.random() < 0.05:
-                #     print(f"{accelerating_probabilities=}")
-                #     print(f"{direction_probabilities=}")
 
                 if random.random() < self.epsilon:
                     total_explore += 1
@@ -98,33 +93,18 @@ class BrainTrainer:
                     # accelerating = torch.randint(
                     #     accelerating_probabilities.shape[0], (1,)
                     # ).to(self.device)
+
                     direction = torch.argmin(direction_probabilities).unsqueeze(0)
                     accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
-
-                    # probabilities.append(
-                    #     [
-                    #         accelerating_probabilities[accelerating],
-                    #         direction_probabilities[direction],
-                    #     ]
-                    # )
-                    # actions.append([accelerating, direction])
                 else:
                     total_exploit += 1
-                    # if not self.config["learn"]:
+
                     direction = direction_probabilities.multinomial(1)
                     accelerating = accelerating_probabilities.multinomial(1)
-                    # else:
-                    #     direction = torch.argmax(direction_probabilities).unsqueeze(0)
-                    #     accelerating = torch.argmax(
-                    #         accelerating_probabilities
-                    #     ).unsqueeze(0)
-                    # probabilities.append(
-                    #     [
-                    #         accelerating_probabilities[accelerating],
-                    #         direction_probabilities[direction],
-                    #     ]
-                    # )
-                    # actions.append([accelerating, direction])
+                #     direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                #     accelerating = torch.argmax(
+                #         accelerating_probabilities
+                #     ).unsqueeze(0)
 
                 agent.action(accelerating.item(), direction.item() - 20)
                 probabilities.append(
@@ -142,12 +122,6 @@ class BrainTrainer:
             for agent in game.agents.values():
                 rewards.append(self.reward(game.puck, goal_state, agent))
                 agent.reward = rewards[-1]
-                # status, distances, positional = game.get_observation(agent)
-                # status, distances, positional = self.normalise_observation(
-                #     status, distances, positional
-                # )
-                # value_estimate = self.critic(status, distances, positional)
-                # values.append(value_estimate)
 
             if self.config["visualise"]:
                 game.draw()
@@ -158,7 +132,6 @@ class BrainTrainer:
             # if frame % 125 == 0 and self.config["learn"]:
             #     print(f"{frame=}")
             #     self.update_network(
-            #         actions[-125:],
             #         rewards[-125:],
             #         probabilities[-125:],
             #         values[-125:],
@@ -177,14 +150,14 @@ class BrainTrainer:
             pygame.quit()
 
         if self.config["learn"]:
-            self.update_network(actions, rewards, probabilities, values)
+            self.update_network(rewards, probabilities, values)
 
         self.epoch += 1
 
         print("finished training")
         print(f"Score: {game.score}")
 
-    def update_network(self, actions, rewards, probabilities, values):
+    def update_network(self, rewards, probabilities, values):
         print(f"{self.epoch}: Updating network")
 
         values = torch.cat(values)
@@ -208,40 +181,18 @@ class BrainTrainer:
         reinforce = advantage * log_probabilities
         actor_loss = reinforce.mean()
         critic_loss = advantage.pow(2).mean()
-        total_loss = actor_loss + critic_loss + random.random() * 5
+        total_loss = actor_loss + critic_loss + random.random() * 2.5
 
         print(f"{actor_loss=}")
         print(f"{critic_loss=}")
 
         self.agent_optimiser.zero_grad()
         self.critic_optimsier.zero_grad()
-        # (actor_loss + critic_loss).backward()
         total_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 2.0, norm_type=2)
         torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 2.0, norm_type=2)
         self.agent_optimiser.step()
         self.critic_optimsier.step()
-
-        # policy_loss = 0
-
-        # log_probabilities = 0
-        # for action_probabilities, action, reward in zip(
-        #     probabilities, actions, returns
-        # ):
-        #     log_probabilities = torch.log(action_probabilities[1])
-        #     if log_probabilities > -1000:
-        #         policy_loss -= log_probabilities * reward
-        #     log_probabilities = torch.log(action_probabilities[0])
-        #     if log_probabilities > -1000:
-        #         policy_loss -= log_probabilities * reward
-        #     policy_loss -= log_probabilities * reward
-
-        # print(f"{policy_loss=}")
-
-        # self.agent_optimiser.zero_grad()
-        # policy_loss.backward()
-        # torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 1.0, norm_type=2)
-        # self.agent_optimiser.step()
 
     def reward(self, puck, goal_state, agent):
         if agent.team == 0:
@@ -285,14 +236,25 @@ class BrainTrainer:
 
         closeness_to_wall_penalty = -25 * math.exp(-min_distance / 50)
 
+        goal_state_reward = 0
+        if goal_state == 1:
+            if agent.team == 0:
+                goal_state_reward = -50
+            else:
+                goal_state_reward = 50
+        elif goal_state == -1:
+            if agent.team == 0:
+                goal_state_reward = 50
+            else:
+                goal_state_reward = -50
+
         reward = (
             +distance_to_goal_reward
             + distance_to_puck_reward
             # + direction_to_puck_reward
             + closeness_to_wall_penalty
+            + goal_state_reward
         )
-
-        # print(f"Agent: {agent.id}, reward: {reward}")
 
         return reward
 
