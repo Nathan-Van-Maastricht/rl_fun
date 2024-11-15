@@ -14,12 +14,12 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=1e-5, weight_decay=1e-4
+            self.agent.parameters(), lr=1e-4, weight_decay=1e-2
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=1e-4, weight_decay=1e-4
+            self.critic.parameters(), lr=1e-3, weight_decay=1e-2
         )
 
         self.epoch = 0
@@ -100,14 +100,13 @@ class BrainTrainer:
                 else:
                     total_exploit += 1
 
-                    direction = direction_probabilities.multinomial(1)
-                    accelerating = accelerating_probabilities.multinomial(1)
-                #     direction = torch.argmax(direction_probabilities).unsqueeze(0)
-                #     accelerating = torch.argmax(
-                #         accelerating_probabilities
-                #     ).unsqueeze(0)
+                    # direction = direction_probabilities.multinomial(1)
+                    # accelerating = accelerating_probabilities.multinomial(1)
+                    direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                    accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
+                    # print(f"{accelerating_probabilities=}")
 
-                agent.action(accelerating.item(), direction.item() - 20)
+                agent.action(accelerating.item(), direction.item() - 7)
                 probabilities.append(
                     [
                         accelerating_probabilities[accelerating],
@@ -154,9 +153,13 @@ class BrainTrainer:
         print(f"Exploit ratio: {100*total_exploit/(total_explore+total_exploit):.2f}")
         print("Game done")
         if game.score[0] > game.score[1]:
-            print(f"Score: \033[32m{game.score[0]} : \033[31m{game.score[1]}\033[0m")
+            print(
+                f"Score: \033[32m{game.score[0]}\033[0m : \033[31m{game.score[1]}\033[0m"
+            )
         elif game.score[0] < game.score[1]:
-            print(f"Score: \033[31m{game.score[0]} : \033[32m{game.score[1]}\033[0m")
+            print(
+                f"Score: \033[31m{game.score[0]}\033[0m : \033[32m{game.score[1]}\033[0m"
+            )
         else:
             print(f"Score: \033[95m{game.score[0]} : {game.score[1]}\033[0m")
 
@@ -182,7 +185,7 @@ class BrainTrainer:
         max_val = rewards.max()
         rewards = (rewards - min_val) / (max_val - min_val)
 
-        rewards = torch.Tensor(self.calculate_returns(rewards)).to(self.device)
+        rewards = 2 * torch.Tensor(self.calculate_returns(rewards)).to(self.device)
 
         advantage = rewards - values
 
@@ -194,7 +197,7 @@ class BrainTrainer:
         reinforce = advantage * log_probabilities
         actor_loss = reinforce.mean()
         critic_loss = advantage.pow(2).mean()
-        total_loss = actor_loss + critic_loss + random.random() * 2.5
+        total_loss = (actor_loss + critic_loss) * (random.random() * 10)
 
         print(f"{actor_loss=}")
         print(f"{critic_loss=}")
@@ -215,16 +218,12 @@ class BrainTrainer:
             target_distance = puck.distance_to_goal(0)
             own_distance = puck.distance_to_goal(1)
 
-        # distance_to_goal_reward = 100 * math.exp(
-        #     -target_distance / 100
-        # ) - 100 * math.exp(-own_distance / 125)
-
         distance_to_goal_reward = 25 * math.exp(-target_distance / 150)
         distance_to_own_goal_penalty = -20 * math.exp(-own_distance / 150)
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = 25 * math.exp(-distance_to_puck / 300) - 12
+        distance_to_puck_reward = 20 * math.exp(-distance_to_puck / 300) - 12
         if (
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
@@ -265,12 +264,12 @@ class BrainTrainer:
                 goal_state_reward = -500
 
         reward = (
-            +distance_to_goal_reward
-            + distance_to_own_goal_penalty
-            + distance_to_puck_reward
-            + direction_to_puck_reward
-            + closeness_to_wall_penalty
-            + goal_state_reward
+            # +distance_to_goal_reward
+            # + distance_to_own_goal_penalty
+            +distance_to_puck_reward
+            # + direction_to_puck_reward
+            # + closeness_to_wall_penalty
+            # + goal_state_reward
         )
 
         return reward
