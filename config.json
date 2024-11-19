@@ -1,14 +1,14 @@
 {
-    "total_frames": 2500,
+    "total_frames": 1000,
     "visualise": false,
+    "learn": true,
     "max_fps": 1000,
     "tiebreak": true,
     "friction": 0.99,
-    "learn": true,
-    "default_epsilon": 0.35,
+    "default_epsilon": 0.40,
     "epsilon_decay": 1e-3,
     "epsilon_min": 1e-1,
-    "mini_batch_size": 50,
+    "mini_batch_size": 100,
     "field": {
         "width": 800,
         "height": 600,
