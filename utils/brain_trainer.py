@@ -14,12 +14,12 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=1e-3, weight_decay=1e-4
+            self.agent.parameters(), lr=1e-4, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=1e-2, weight_decay=1e-4
+            self.critic.parameters(), lr=1e-3, weight_decay=1e-4
         )
 
         self.epoch = 0
@@ -99,14 +99,14 @@ class BrainTrainer:
                 else:
                     total_exploit += 1
 
-                    direction = direction_probabilities.multinomial(1)
-                    accelerating = accelerating_probabilities.multinomial(1)
-                    # direction = torch.argmax(direction_probabilities).unsqueeze(0)
-                    # accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
+                    # direction = direction_probabilities.multinomial(1)
+                    # accelerating = accelerating_probabilities.multinomial(1)
+                    direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                    accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
                     # print(f"{accelerating_probabilities=}")
 
                 # agent.action(accelerating.item(), direction.item() - 2)
-                agent.action(accelerating, direction - 2)
+                agent.action(accelerating, direction - 10)
                 if agent.team == 0:
                     probabilities.append(
                         [
@@ -191,7 +191,7 @@ class BrainTrainer:
 
         # normalise rewards
         rewards = torch.FloatTensor(rewards).to(self.device)
-        rewards = torch.tanh(rewards / 50)
+        # rewards = torch.tanh(rewards / 50)
         # min_val = rewards.min()
         # max_val = rewards.max()
         # rewards = (rewards - min_val) / (max_val - min_val)
@@ -224,8 +224,9 @@ class BrainTrainer:
         # for name, param in self.agent.named_parameters():
         #     print(f"{name}: requires_grad={param.requires_grad}")
 
-        # for name, param in self.agent.named_parameters():
-        #     print(f"Gradient of {name}: {param.grad}")
+        for name, param in self.agent.named_parameters():
+            if param.grad.eq(0).any():
+                print(f"Gradient of {name}: {param.grad}")
 
         self.agent_optimiser.step()
         self.critic_optimsier.step()
@@ -287,12 +288,12 @@ class BrainTrainer:
                 goal_state_reward = -500
 
         reward = (
-            +distance_to_goal_reward
-            + distance_to_own_goal_penalty
-            + distance_to_puck_reward
-            + direction_to_puck_reward
-            + closeness_to_wall_penalty
-            + goal_state_reward
+            # +distance_to_goal_reward
+            # + distance_to_own_goal_penalty
+            +distance_to_puck_reward
+            # + direction_to_puck_reward
+            # + closeness_to_wall_penalty
+            # + goal_state_reward
         )
 
         return reward
