@@ -16,10 +16,10 @@ def train():
 
     config = Config("config.json")
 
-    load_batch = 0
+    load_batch = 24
 
-    # if not config["learn"]:
-    #     brain.eval()
+    if not config["learn"]:
+        brain.eval()
 
     if load_batch > 0:
         brain.load(f"weights/b{load_batch:0>5}.pth")
