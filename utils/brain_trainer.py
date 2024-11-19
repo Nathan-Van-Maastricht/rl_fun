@@ -14,12 +14,12 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=1e-4, weight_decay=1e-2
+            self.agent.parameters(), lr=1e-2, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
         self.critic_optimsier = optim.AdamW(
-            self.critic.parameters(), lr=1e-3, weight_decay=1e-2
+            self.critic.parameters(), lr=1e-2, weight_decay=1e-4
         )
 
         self.epoch = 0
@@ -42,9 +42,10 @@ class BrainTrainer:
 
         # normalise distances
         distances = torch.FloatTensor(distances).to(self.device)
-        distances_min = torch.min(distances)
-        distances_max = torch.max(distances)
-        distances = (distances - distances_min) / (distances_max - distances_min)
+        distnaces = torch.tanh(distances)
+        # distances_min = torch.min(distances)
+        # distances_max = torch.max(distances)
+        # distances = (distances - distances_min) / (distances_max - distances_min)
 
         # normalise position
         positional = torch.FloatTensor(positional).to(self.device)
@@ -85,6 +86,9 @@ class BrainTrainer:
                     status, distances, positional
                 )
 
+                # print(f"{accelerating_probabilities=}")
+                # print(f"{direction_probabilities=}")
+
                 if random.random() < self.epsilon:
                     total_explore += 1
                     direction = torch.randint(
@@ -94,9 +98,6 @@ class BrainTrainer:
                     accelerating = torch.randint(
                         accelerating_probabilities.shape[0], (1,)
                     ).to(self.device)
-
-                    # direction = torch.argmin(direction_probabilities).unsqueeze(0)
-                    # accelerating = torch.argmin(accelerating_probabilities).unsqueeze(0)
                 else:
                     total_exploit += 1
 
@@ -106,7 +107,7 @@ class BrainTrainer:
                     accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
                     # print(f"{accelerating_probabilities=}")
 
-                agent.action(accelerating.item(), direction.item() - 7)
+                agent.action(accelerating.item(), direction.item() - 2)
                 probabilities.append(
                     [
                         accelerating_probabilities[accelerating],
@@ -181,11 +182,13 @@ class BrainTrainer:
 
         # normalise rewards
         rewards = torch.Tensor(rewards).to(self.device)
-        min_val = rewards.min()
-        max_val = rewards.max()
-        rewards = (rewards - min_val) / (max_val - min_val)
+        rewards = torch.tanh(rewards / 50)
+        # min_val = rewards.min()
+        # max_val = rewards.max()
+        # rewards = (rewards - min_val) / (max_val - min_val)
+        # rewards = 2 * rewards - 1
 
-        rewards = 2 * torch.Tensor(self.calculate_returns(rewards)).to(self.device)
+        rewards = torch.Tensor(self.calculate_returns(rewards)).to(self.device)
 
         advantage = rewards - values
 
@@ -197,7 +200,7 @@ class BrainTrainer:
         reinforce = advantage * log_probabilities
         actor_loss = reinforce.mean()
         critic_loss = advantage.pow(2).mean()
-        total_loss = (actor_loss + critic_loss) * (random.random() * 10)
+        total_loss = actor_loss + critic_loss
 
         print(f"{actor_loss=}")
         print(f"{critic_loss=}")
@@ -264,12 +267,12 @@ class BrainTrainer:
                 goal_state_reward = -500
 
         reward = (
-            # +distance_to_goal_reward
-            # + distance_to_own_goal_penalty
-            +distance_to_puck_reward
+            +distance_to_goal_reward
+            + distance_to_own_goal_penalty
+            + distance_to_puck_reward
             # + direction_to_puck_reward
-            # + closeness_to_wall_penalty
-            # + goal_state_reward
+            + closeness_to_wall_penalty
+            + goal_state_reward
         )
 
         return reward
