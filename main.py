@@ -11,19 +11,28 @@ def main():
 
 
 def train():
-    brain = Brain(456, 128)
-    critic = BrainValue(456, 128)
+    brain = Brain(166, 256)
+    critic = BrainValue(166, 256)
+
+    config = Config("config.json")
+
     load_batch = 0
+
+    # if not config["learn"]:
+    #     brain.eval()
+
     if load_batch > 0:
         brain.load(f"weights/b{load_batch:0>5}.pth")
         critic.load(f"weights/c{load_batch:0>5}.pth")
-    config = Config("config.json")
+
     trainer = BrainTrainer(brain, config, critic)
-    for epoch in range(load_batch + 1, 3001):
+    trainer.epoch = load_batch + 1
+
+    for epoch in range(load_batch + 1, 300):
         print(f"Starting epoch {epoch}")
         trainer.train_episode()
         trainer.decay_epsilon()
-        if epoch % 5 == 0 and config["learn"]:
+        if epoch % 2 == 0 and config["learn"]:
             brain.save(f"weights/b{epoch:0>5}.pth")
             critic.save(f"weights/c{epoch:0>5}.pth")
 

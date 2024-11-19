@@ -52,10 +52,10 @@ class Brain(nn.Module):
         # self.accelerate = nn.Sequential(
         #     nn.Linear(input_dim, hidden_dim),
         #     # nn.ReLU(),
-        #     nn.Linear(hidden_dim, 2 * hidden_dim),
+        #     nn.Linear(hidden_dim, hidden_dim),
         #     Swish(beta=1.0),
-        #     nn.Linear(2 * hidden_dim, hidden_dim),
-        #     Swish(beta=1.0),
+        #     # nn.Linear(hidden_dim, hidden_dim),
+        #     # Swish(beta=1.0),
         #     nn.Linear(hidden_dim, 2),
         #     nn.Softmax(),
         # )
@@ -72,9 +72,9 @@ class Brain(nn.Module):
         # self.turn = nn.Sequential(
         #     nn.Linear(input_dim, hidden_dim),
         #     # nn.ReLU(),
-        #     nn.Linear(hidden_dim, 2 * hidden_dim),
+        #     nn.Linear(hidden_dim, hidden_dim),
         #     Swish(beta=1.0),
-        #     nn.Linear(2 * hidden_dim, hidden_dim),
+        #     nn.Linear(hidden_dim, hidden_dim),
         #     Swish(beta=1.0),
         #     nn.Linear(hidden_dim, 5),
         #     nn.Softmax(),
@@ -148,10 +148,12 @@ class Brain(nn.Module):
             )
         )
 
+        # vector = torch.cat((status, distances, positions))
+
         accelerate = self.accelerate(vector)
         turn = self.turn(vector)
-        # accelerate = torch.clamp(accelerate, min=0.1, max=0.9)
-        # turn = torch.clamp(turn, min=0.0001, max=0.98)
+        accelerate = torch.clamp(accelerate, min=0.01, max=0.999)
+        turn = torch.clamp(turn, min=0.01, max=0.98)
 
         return accelerate, turn
 

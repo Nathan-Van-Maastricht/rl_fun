@@ -14,7 +14,7 @@ class BrainTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agent = agent.to(self.device)
         self.agent_optimiser = optim.AdamW(
-            self.agent.parameters(), lr=1e-2, weight_decay=1e-4
+            self.agent.parameters(), lr=1e-3, weight_decay=1e-4
         )
 
         self.critic = critic.to(self.device)
@@ -42,7 +42,7 @@ class BrainTrainer:
 
         # normalise distances
         distances = torch.FloatTensor(distances).to(self.device)
-        distnaces = torch.tanh(distances)
+        distances = torch.tanh(distances)
         # distances_min = torch.min(distances)
         # distances_max = torch.max(distances)
         # distances = (distances - distances_min) / (distances_max - distances_min)
@@ -78,16 +78,14 @@ class BrainTrainer:
                 status, distances, positional = self.normalise_observation(
                     status, distances, positional
                 )
-                value_estimate = self.critic(status, distances, positional)
-                values.append(value_estimate)
+                if agent.team == 0:
+                    value_estimate = self.critic(status, distances, positional)
+                    values.append(value_estimate)
 
                 # act
                 accelerating_probabilities, direction_probabilities = self.agent(
                     status, distances, positional
                 )
-
-                # print(f"{accelerating_probabilities=}")
-                # print(f"{direction_probabilities=}")
 
                 if random.random() < self.epsilon:
                     total_explore += 1
@@ -101,19 +99,21 @@ class BrainTrainer:
                 else:
                     total_exploit += 1
 
-                    # direction = direction_probabilities.multinomial(1)
-                    # accelerating = accelerating_probabilities.multinomial(1)
-                    direction = torch.argmax(direction_probabilities).unsqueeze(0)
-                    accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
+                    direction = direction_probabilities.multinomial(1)
+                    accelerating = accelerating_probabilities.multinomial(1)
+                    # direction = torch.argmax(direction_probabilities).unsqueeze(0)
+                    # accelerating = torch.argmax(accelerating_probabilities).unsqueeze(0)
                     # print(f"{accelerating_probabilities=}")
 
-                agent.action(accelerating.item(), direction.item() - 2)
-                probabilities.append(
-                    [
-                        accelerating_probabilities[accelerating],
-                        direction_probabilities[direction],
-                    ]
-                )
+                # agent.action(accelerating.item(), direction.item() - 2)
+                agent.action(accelerating, direction - 2)
+                if agent.team == 0:
+                    probabilities.append(
+                        [
+                            accelerating_probabilities[accelerating],
+                            direction_probabilities[direction],
+                        ]
+                    )
                 # actions.append([accelerating, direction])
 
             # update state
@@ -121,8 +121,10 @@ class BrainTrainer:
 
             # determine rewards
             for agent in game.agents.values():
-                rewards.append(self.reward(game.puck, goal_state, agent))
-                agent.reward = rewards[-1]
+                reward = self.reward(game.puck, goal_state, agent)
+                if agent.team == 0:
+                    rewards.append(reward)
+                agent.reward = reward
 
             if self.config["visualise"]:
                 game.draw()
@@ -167,7 +169,7 @@ class BrainTrainer:
         if self.config["visualise"]:
             pygame.quit()
 
-        if self.config["learn"] and self.config["mini_batch_size"] == 0:
+        if self.config["learn"] and self.config["mini_batch_size"] <= 0:
             self.update_network(rewards, probabilities, values)
 
         self.epoch += 1
@@ -178,17 +180,24 @@ class BrainTrainer:
         print(f"{self.epoch}: Updating network")
 
         values = torch.cat(values)
-        probabilities = torch.Tensor(probabilities).transpose(0, 1).to(self.device)
+        # print(f"{probabilities[0]=}")
+        # probabilities = torch.stack(probabilities).transpose(0, 1).to(self.device)
+        probabilities = (
+            torch.stack([torch.stack(inner_list) for inner_list in probabilities])
+            .squeeze(2)
+            .transpose(0, 1)
+            .to(self.device)
+        )
 
         # normalise rewards
-        rewards = torch.Tensor(rewards).to(self.device)
+        rewards = torch.FloatTensor(rewards).to(self.device)
         rewards = torch.tanh(rewards / 50)
         # min_val = rewards.min()
         # max_val = rewards.max()
         # rewards = (rewards - min_val) / (max_val - min_val)
         # rewards = 2 * rewards - 1
 
-        rewards = torch.Tensor(self.calculate_returns(rewards)).to(self.device)
+        rewards = torch.stack(self.calculate_returns(rewards))
 
         advantage = rewards - values
 
@@ -208,10 +217,21 @@ class BrainTrainer:
         self.agent_optimiser.zero_grad()
         self.critic_optimsier.zero_grad()
         total_loss.backward()
+
         torch.nn.utils.clip_grad_norm_(self.agent.parameters(), 2.0, norm_type=2)
         torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 2.0, norm_type=2)
+
+        # for name, param in self.agent.named_parameters():
+        #     print(f"{name}: requires_grad={param.requires_grad}")
+
+        # for name, param in self.agent.named_parameters():
+        #     print(f"Gradient of {name}: {param.grad}")
+
         self.agent_optimiser.step()
         self.critic_optimsier.step()
+
+        # for name, param in self.agent.named_parameters():
+        #     print(f"{name}: {param=}")
 
     def reward(self, puck, goal_state, agent):
         if agent.team == 0:
@@ -226,7 +246,7 @@ class BrainTrainer:
 
         distance_to_puck = ((agent.x - puck.x) ** 2 + (agent.y - puck.y) ** 2) ** 0.5
 
-        distance_to_puck_reward = 20 * math.exp(-distance_to_puck / 300) - 12
+        distance_to_puck_reward = 30 * math.exp(-distance_to_puck / 300) - 12
         if (
             distance_to_puck
             < self.config["puck"]["radius"] + self.config["agent"]["radius"] + 5
@@ -270,7 +290,7 @@ class BrainTrainer:
             +distance_to_goal_reward
             + distance_to_own_goal_penalty
             + distance_to_puck_reward
-            # + direction_to_puck_reward
+            + direction_to_puck_reward
             + closeness_to_wall_penalty
             + goal_state_reward
         )
