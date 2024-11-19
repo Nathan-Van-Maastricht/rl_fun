@@ -22,6 +22,21 @@ class Embedding(nn.Module):
         return torch.matmul(input.float().unsqueeze(0), self.embedding).squeeze(0)
 
 
+class ResidualBlock(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(ResidualBlock, self).__init__()
+        self.linear1 = nn.Linear(input_dim, hidden_dim)
+        self.swish = Swish(beta=1.0)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+
+    def forward(self, x):
+        residual = x
+        out = self.linear1(x)
+        out = self.swish(out)
+        out = self.linear2(out)
+        return self.swish(out + residual)
+
+
 class Swish(nn.Module):
     def __init__(self, beta=1.0):
         super(Swish, self).__init__()
@@ -34,26 +49,44 @@ class Swish(nn.Module):
 class Brain(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(Brain, self).__init__()
+        # self.accelerate = nn.Sequential(
+        #     nn.Linear(input_dim, hidden_dim),
+        #     # nn.ReLU(),
+        #     nn.Linear(hidden_dim, 2 * hidden_dim),
+        #     Swish(beta=1.0),
+        #     nn.Linear(2 * hidden_dim, hidden_dim),
+        #     Swish(beta=1.0),
+        #     nn.Linear(hidden_dim, 2),
+        #     nn.Softmax(),
+        # )
+
         self.accelerate = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            # nn.ReLU(),
-            nn.Linear(hidden_dim, 2 * hidden_dim),
-            Swish(beta=1.0),
-            nn.Linear(2 * hidden_dim, hidden_dim),
-            Swish(beta=1.0),
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
             nn.Linear(hidden_dim, 2),
-            nn.Softmax(),
+            nn.Softmax(dim=0),
         )
+
+        # self.turn = nn.Sequential(
+        #     nn.Linear(input_dim, hidden_dim),
+        #     # nn.ReLU(),
+        #     nn.Linear(hidden_dim, 2 * hidden_dim),
+        #     Swish(beta=1.0),
+        #     nn.Linear(2 * hidden_dim, hidden_dim),
+        #     Swish(beta=1.0),
+        #     nn.Linear(hidden_dim, 5),
+        #     nn.Softmax(),
+        # )
 
         self.turn = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            # nn.ReLU(),
-            nn.Linear(hidden_dim, 2 * hidden_dim),
-            Swish(beta=1.0),
-            nn.Linear(2 * hidden_dim, hidden_dim),
-            Swish(beta=1.0),
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
+            ResidualBlock(hidden_dim, hidden_dim),
             nn.Linear(hidden_dim, 5),
-            nn.Softmax(),
+            nn.Softmax(dim=0),
         )
 
         self.team_mate_embedding = Embedding(3, 32)
