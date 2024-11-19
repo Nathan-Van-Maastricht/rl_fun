@@ -25,16 +25,28 @@ class Embedding(nn.Module):
 class ResidualBlock(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super(ResidualBlock, self).__init__()
-        self.linear1 = nn.Linear(input_dim, hidden_dim)
-        self.swish = Swish(beta=1.0)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+        # self.linear1 = nn.Linear(input_dim, hidden_dim)
+        # self.swish = Swish(beta=1.0)
+        # self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+
+        self.main = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+        )
+
+        self.out = nn.Sequential(
+            nn.Softplus(),
+            nn.Tanh(),
+        )
 
     def forward(self, x):
         residual = x
-        out = self.linear1(x)
-        out = self.swish(out)
-        out = self.linear2(out)
-        return self.swish(out + residual)
+        # out = self.linear1(x)
+        # out = self.swish(out)
+        # out = self.linear2(out)
+        out = self.main(x)
+        return self.out(out + residual)
 
 
 class Swish(nn.Module):
@@ -85,7 +97,7 @@ class Brain(nn.Module):
             ResidualBlock(hidden_dim, hidden_dim),
             ResidualBlock(hidden_dim, hidden_dim),
             ResidualBlock(hidden_dim, hidden_dim),
-            nn.Linear(hidden_dim, 5),
+            nn.Linear(hidden_dim, 21),
             nn.Softmax(dim=0),
         )
 
@@ -171,7 +183,8 @@ class BrainValue(nn.Module):
             nn.Linear(input_dim, hidden_dim),
             # nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            Swish(beta=1.0),
+            # Swish(beta=1.0),
+            nn.ReLU(),
             nn.Linear(hidden_dim, 1),
         )
 
