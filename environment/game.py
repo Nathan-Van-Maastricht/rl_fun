@@ -169,6 +169,10 @@ class Game:
         positional.extend(team_mates)
         positional.extend(enemy)
 
+        # print(f"{status=}")
+        # print(f"{distances=}")
+        # print(f"{positional=}")
+
         return status, distances, positional
 
     def reset_positions(self, goal_state=0):
